@@ -12,10 +12,6 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
-env:
-  # Keep in step with the uv image tag in deploy/docker/*.Dockerfile.
-  UV_VERSION: "0.13.5"
-
 jobs:
   checks:
     name: Checks (Python ${{ matrix.python-version }})
@@ -32,9 +28,21 @@ jobs:
         with:
           persist-credentials: false
 
+      # One source of truth for the uv version: the image tag in the
+      # Dockerfiles, which Dependabot keeps current.
+      - name: Read the uv version the images use
+        id: uv
+        run: |
+          version="$(sed -n 's|^FROM ghcr.io/astral-sh/uv:\([0-9][0-9.]*\) AS uv$|\1|p' deploy/docker/agent.Dockerfile)"
+          if [ -z "$version" ]; then
+            echo "::error::could not read the uv version from deploy/docker/agent.Dockerfile"
+            exit 1
+          fi
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+
       - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
         with:
-          version: ${{ env.UV_VERSION }}
+          version: ${{ steps.uv.outputs.version }}
           python-version: ${{ matrix.python-version }}
           enable-cache: true
 
@@ -85,6 +93,14 @@ jobs:
             --values deploy/helm/ushabti/ci/overseen-values.yaml > /dev/null
           helm template ushabti deploy/helm/ushabti \
             --values deploy/helm/ushabti/ci/allow-write-values.yaml > /dev/null
+
+      # The workflows read the uv version from one Dockerfile, so the two
+      # must not drift apart.
+      - name: Check that both Dockerfiles use the same base images
+        run: >-
+          diff
+          <(grep '^FROM' deploy/docker/agent.Dockerfile)
+          <(grep '^FROM' deploy/docker/overseer.Dockerfile)
 
       - name: Validate the Compose files
         env:

@@ -8,8 +8,9 @@
 # IMAGE is the name the image is published under.
 
 # The image tags are written out in full, not built from arguments, so that
-# Dependabot can see and update them. Keep the two python lines the same, and
-# keep the uv tag in step with UV_VERSION in .github/workflows/*.yaml.
+# Dependabot can see and update them. Keep the two python lines the same. The
+# workflows read the uv version from the line below, and CI checks that both
+# Dockerfiles name the same images.
 FROM ghcr.io/astral-sh/uv:0.13.5 AS uv
 
 # Build stage: resolve and install into a virtual environment with uv.

@@ -15,11 +15,33 @@ classifiers = [
     "Topic :: System :: Systems Administration",
     "Typing :: Typed",
 ]
-dependencies = []
+dependencies = [
+    "pydantic>=2.14.3",
+    "pydantic-settings>=2.16.2",
+    "pyyaml>=6.0.3",
+    "structlog>=26.1.0",
+]
 
 [project.urls]
 # OWNER is a placeholder for the GitHub user or organisation. See the README.
 Repository = "https://github.com/OWNER/ushabti"
+
+[project.optional-dependencies]
+anthropic = [
+    "anthropic>=2.6.0",
+]
+openai = [
+    "openai>=3.46.0",
+]
+kubernetes = [
+    "kubernetes>=37.0.2",
+]
+proxmox = [
+    "proxmoxer>=2.3.0",
+]
+prometheus = [
+    "httpx>=0.28.1",
+]
 
 [build-system]
 requires = ["uv_build>=0.13.5,<0.14.0"]

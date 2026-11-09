@@ -12,9 +12,9 @@
 #
 # The images are built locally and tagged ushabti-agent:dev and
 # ushabti-overseer:dev. To run published images instead, set
-# USHABTI_AGENT_IMAGE and USHABTI_OVERSEER_IMAGE, for example to
-# ghcr.io/<owner>/ushabti-agent. (The OWNER placeholder used elsewhere in this
-# repository is not a valid image name here: image names must be lowercase.)
+# USHABTI_AGENT_IMAGE to ghcr.io/ushabti-io/ushabti-agent,
+# USHABTI_OVERSEER_IMAGE to ghcr.io/ushabti-io/ushabti-overseer, and
+# USHABTI_TAG to a released version.
 
 name: ushabti-overseen
 

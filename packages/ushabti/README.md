@@ -1,6 +1,6 @@
 # ushabti
 
-The SDK for [Ushabti](https://github.com/OWNER/ushabti), an open-source DevOps agent harness.
+The SDK for [Ushabti](https://github.com/ushabti-io/ushabti), an open-source DevOps agent harness.
 
 It holds the vocabulary every other package shares:
 

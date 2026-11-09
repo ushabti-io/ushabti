@@ -13,7 +13,6 @@ keywords:
   - monitoring
   - shabti
   - shawabti
-# OWNER is a placeholder for the GitHub user or organisation. See the README.
-home: https://github.com/OWNER/ushabti
+home: https://github.com/ushabti-io/ushabti
 sources:
-  - https://github.com/OWNER/ushabti
+  - https://github.com/ushabti-io/ushabti

@@ -27,8 +27,7 @@ dependencies = [
 ushabti-overseer = "ushabti_overseer.cli:app"
 
 [project.urls]
-# OWNER is a placeholder for the GitHub user or organisation. See the README.
-Repository = "https://github.com/OWNER/ushabti"
+Repository = "https://github.com/ushabti-io/ushabti"
 
 [build-system]
 requires = ["uv_build>=0.13.5,<0.14.0"]

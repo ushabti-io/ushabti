@@ -1,11 +1,5 @@
 Ushabti is installed in {{ .Values.mode }} mode with {{ len .Values.ushabti }} ushabti.
 
-{{- if contains "OWNER" .Values.agent.image.repository }}
-
-WARNING: agent.image.repository still holds the OWNER placeholder, so the pods
-cannot pull their image. Set it to your registry path, in lowercase.
-{{- end }}
-
 Check on them:
 
   kubectl get pods -n {{ .Release.Namespace }} -l app.kubernetes.io/instance={{ .Release.Name }}

@@ -1,6 +1,6 @@
 # ushabti-agent
 
-The agent runtime for [Ushabti](https://github.com/OWNER/ushabti), an open-source DevOps agent harness.
+The agent runtime for [Ushabti](https://github.com/ushabti-io/ushabti), an open-source DevOps agent harness.
 
 One ushabti (one agent instance) runs one spell (its declarative definition). It keeps a vigil
 (the monitoring loop) over its fields (the targets it tends), and every write implement (tool) it

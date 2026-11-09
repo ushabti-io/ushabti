@@ -1,7 +1,6 @@
 # Ushabti
 
-<!-- Status badge placeholder. It works once OWNER is replaced with the GitHub user or organisation. -->
-[![CI](https://github.com/OWNER/ushabti/actions/workflows/ci.yaml/badge.svg)](https://github.com/OWNER/ushabti/actions/workflows/ci.yaml)
+[![CI](https://github.com/ushabti-io/ushabti/actions/workflows/ci.yaml/badge.svg)](https://github.com/ushabti-io/ushabti/actions/workflows/ci.yaml)
 
 Ushabti is an open-source DevOps agent harness. It monitors infrastructure,
 detects current failures, predicts upcoming ones, and takes guarded corrective
@@ -184,9 +183,9 @@ Each is declared with its kind and its parameters, and raises
 `NotImplementedError`. Until they are built, an ushabti pointed at a real
 cluster can be summoned and will reason, but cannot observe or act.
 
-`OWNER` appears in image names, chart values, and links. It is a placeholder for
-the GitHub user or organisation that will host the project. Replace it, in
-lowercase where it names a container image.
+The container images will be published to `ghcr.io/ushabti-io` by the release
+workflow. None exists until the first release, so for now build them locally,
+as the quick start does.
 
 ## License
 

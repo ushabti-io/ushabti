@@ -188,9 +188,9 @@ Secrets only.
 
 ## Releases
 
-Nothing is published yet. The release workflow needs setup on PyPI and on the
-container registry before it can run. The comment at the top of
-`.github/workflows/release.yaml` lists the steps.
+Nothing is published yet. The release workflow needs setup on PyPI before it
+can run. The comment at the top of `.github/workflows/release.yaml` lists the
+steps.
 
 The three packages share one version and are released together. To cut a
 release, set the same version in all three `pyproject.toml` files and in

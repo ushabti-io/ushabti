@@ -38,9 +38,9 @@ ushabti:
 
 agent:
   image:
-    # OWNER is a placeholder for the GitHub user or organisation. Replace it,
-    # in lowercase, before installing: image names must be lowercase.
-    repository: ghcr.io/OWNER/ushabti-agent
+    # Published by the release workflow. Until the first release there is no
+    # image here: build one and point this at your own registry.
+    repository: ghcr.io/ushabti-io/ushabti-agent
     # Defaults to the chart's appVersion.
     tag: ""
     pullPolicy: IfNotPresent
@@ -107,8 +107,8 @@ agent:
 # Only deployed when mode is overseen.
 overseer:
   image:
-    # OWNER is a placeholder. Replace it, in lowercase, before installing.
-    repository: ghcr.io/OWNER/ushabti-overseer
+    # Published by the release workflow, like the agent image.
+    repository: ghcr.io/ushabti-io/ushabti-overseer
     # Defaults to the chart's appVersion.
     tag: ""
     pullPolicy: IfNotPresent

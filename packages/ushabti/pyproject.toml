@@ -23,8 +23,7 @@ dependencies = [
 ]
 
 [project.urls]
-# OWNER is a placeholder for the GitHub user or organisation. See the README.
-Repository = "https://github.com/OWNER/ushabti"
+Repository = "https://github.com/ushabti-io/ushabti"
 
 [project.optional-dependencies]
 anthropic = [

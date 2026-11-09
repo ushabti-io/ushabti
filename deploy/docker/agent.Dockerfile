@@ -5,8 +5,7 @@
 # Build from the repository root:
 #   docker build -f deploy/docker/agent.Dockerfile -t ushabti-agent:dev .
 #
-# IMAGE is the name the image is published under. OWNER is a placeholder for
-# the GitHub user or organisation. See the README.
+# IMAGE is the name the image is published under.
 
 # The image tags are written out in full, not built from arguments, so that
 # Dependabot can see and update them. Keep the two python lines the same, and
@@ -51,12 +50,12 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 # Runtime stage: the slim image, the virtual environment, and a non-root user.
 FROM python:3.14-slim AS runtime
 
-ARG IMAGE=ghcr.io/OWNER/ushabti-agent
+ARG IMAGE=ghcr.io/ushabti-io/ushabti-agent
 
 LABEL org.opencontainers.image.title="ushabti-agent" \
       org.opencontainers.image.description="One ushabti: an agent that tends infrastructure under a spell." \
       org.opencontainers.image.licenses="Apache-2.0" \
-      org.opencontainers.image.source="https://github.com/OWNER/ushabti" \
+      org.opencontainers.image.source="https://github.com/ushabti-io/ushabti" \
       org.opencontainers.image.ref.name="${IMAGE}"
 
 # The only writable path is the Papyrus directory, so the container runs with

@@ -1,6 +1,6 @@
 # ushabti-overseer
 
-The overseer for [Ushabti](https://github.com/OWNER/ushabti), an open-source DevOps agent harness.
+The overseer for [Ushabti](https://github.com/ushabti-io/ushabti), an open-source DevOps agent harness.
 
 The overseer is the optional orchestrator. It registers ushabti (agent instances), groups them into
 decades (groups of ten by default), tracks their "Here am I" messages (the health signal each

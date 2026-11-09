@@ -4,6 +4,9 @@ Thanks for helping with Ushabti. This page covers setup, the checks every
 change must pass, commit conventions, and how to add an implement (a tool an
 agent can use). Please also read the [Code of Conduct](CODE_OF_CONDUCT.md).
 
+If you work with a coding agent, [AGENTS.md](AGENTS.md) holds the same rules in
+the short form agents read. `CLAUDE.md` imports it, so Claude Code reads it too.
+
 ## Vocabulary
 
 The project has its own terms, and they are used exactly: in identifiers,

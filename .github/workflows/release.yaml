@@ -2,17 +2,19 @@
 #
 # Before the first release:
 #
-#   1. On PyPI, configure a Trusted Publisher for each of the three packages:
-#      ushabti, ushabti-agent, and ushabti-overseer. Each one names this
+#   1. On PyPI, the project ushabti needs a Trusted Publisher that names this
 #      repository, the workflow file release.yaml, and the environment pypi.
-#      For a name that is not on PyPI yet, add it as a pending publisher.
+#      Until the project exists, that is a pending publisher on your account.
 #      Publishing then uses OIDC. There is no API token to store.
 #
 #   2. In this repository's settings, create an environment named pypi.
-#      Requiring a reviewer on it gives every release a manual approval.
+#      Requiring a reviewer on it gives every release a manual approval. On
+#      the GitHub Free plan, environments need the repository to be public.
 #
-# The image owner is already set: images go to ghcr.io/ushabti-io, from
-# IMAGE_OWNER below.
+# Only the SDK, ushabti, is published to PyPI. The agent and the overseer ship
+# as container images, pushed to ghcr.io/ushabti-io (IMAGE_OWNER below). Their
+# packages carry the "Private :: Do Not Upload" classifier, so PyPI would
+# refuse them.
 #
 # To release, set the same version in all three pyproject.toml files, commit,
 # and push a tag that matches it, such as v0.1.0. See CONTRIBUTING.md.
@@ -84,7 +86,7 @@ jobs:
           uv run pytest
 
   build:
-    name: Build the sdist and wheel of all three packages
+    name: Build the sdist and wheel of the SDK
     needs: verify
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -97,10 +99,10 @@ jobs:
         with:
           version: ${{ needs.verify.outputs.uv-version }}
 
-      # --no-sources builds each package the way an installer will see it,
-      # without the workspace links that only exist in this repository.
+      # Only the SDK goes to PyPI. --no-sources builds it the way an installer
+      # will see it, without the workspace links that only exist here.
       - name: Build
-        run: uv build --all-packages --no-sources --out-dir dist
+        run: uv build --package ushabti --no-sources --out-dir dist
 
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
@@ -126,6 +128,15 @@ jobs:
       - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
         with:
           version: ${{ needs.verify.outputs.uv-version }}
+
+      - name: Check that only the SDK is about to be published
+        run: |
+          for file in dist/*; do
+            case "$(basename "$file")" in
+              ushabti-[0-9]*) ;;
+              *) echo "::error::unexpected file in dist: $file"; exit 1 ;;
+            esac
+          done
 
       - name: Publish
         run: uv publish --trusted-publishing always dist/*

@@ -162,11 +162,14 @@ These hold out of the box. Each one must be loosened on purpose, and
 
 ## Packages
 
-| Package | What it is | Command |
-|---|---|---|
-| [`ushabti`](packages/ushabti) | The SDK: spells, implements, the weighing, Papyrus, model providers. | |
-| [`ushabti-agent`](packages/ushabti-agent) | The runtime of one ushabti, with its HTTP API. | `ushabti` |
-| [`ushabti-overseer`](packages/ushabti-overseer) | The overseer. | `ushabti-overseer` |
+| Package | What it is | Command | Distributed as |
+|---|---|---|---|
+| [`ushabti`](packages/ushabti) | The SDK: spells, implements, the weighing, Papyrus, model providers. | | PyPI package `ushabti` |
+| [`ushabti-agent`](packages/ushabti-agent) | The runtime of one ushabti, with its HTTP API. | `ushabti` | Container image `ghcr.io/ushabti-io/ushabti-agent` |
+| [`ushabti-overseer`](packages/ushabti-overseer) | The overseer. | `ushabti-overseer` | Container image `ghcr.io/ushabti-io/ushabti-overseer` |
+
+Only the SDK goes to PyPI. The agent and the overseer are services, so they ship
+as container images.
 
 ## Status
 

@@ -17,7 +17,8 @@ The repository holds three Python packages.
 
 The SDK has no network server and no command line. The other two packages
 depend on it and never on each other: an ushabti and an overseer only meet over
-HTTP.
+HTTP. The SDK is published to PyPI. The agent and the overseer are services, so
+they ship as container images.
 
 ## Three modes
 

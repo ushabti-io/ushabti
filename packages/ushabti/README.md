@@ -16,6 +16,7 @@ pip install "ushabti[anthropic]"    # with the Anthropic SDK
 pip install "ushabti[openai]"       # with the OpenAI SDK, for any OpenAI-compatible endpoint
 ```
 
-To run an agent, install `ushabti-agent`. To coordinate several, install `ushabti-overseer`.
+This is the only Ushabti package on PyPI. The agent and the overseer ship as container images,
+`ghcr.io/ushabti-io/ushabti-agent` and `ghcr.io/ushabti-io/ushabti-overseer`.
 
 See the repository README for the glossary, the architecture, and the safety defaults.

@@ -1,6 +1,7 @@
 """The documentation stays true: links resolve and generated pages have not drifted."""
 
 import re
+import tomllib
 from pathlib import Path
 
 import pytest
@@ -145,6 +146,22 @@ def test_the_contributing_example_is_a_real_implement() -> None:
     assert len(made) == 1
     registry = ImplementRegistry([made[0]()])
     assert registry.names() == ("proxmox.node_uptime",)
+
+
+def test_only_the_sdk_can_be_uploaded_to_pypi() -> None:
+    def classifiers(package: str) -> list[str]:
+        text = (REPO / "packages" / package / "pyproject.toml").read_text(encoding="utf-8")
+        found: list[str] = tomllib.loads(text)["project"]["classifiers"]
+        return found
+
+    private = "Private :: Do Not Upload"
+    assert private not in classifiers("ushabti"), "the SDK is the one package on PyPI"
+    assert private in classifiers("ushabti-agent"), "the agent ships as a container image"
+    assert private in classifiers("ushabti-overseer"), "the overseer ships as a container image"
+
+    release = (REPO / ".github" / "workflows" / "release.yaml").read_text(encoding="utf-8")
+    assert "uv build --package ushabti --no-sources" in release
+    assert "--all-packages --no-sources" not in release
 
 
 # These hold only while SCAFFOLD.md is kept in the repository.

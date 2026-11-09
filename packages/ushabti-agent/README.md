@@ -6,11 +6,30 @@ One ushabti (one agent instance) runs one spell (its declarative definition). It
 (the monitoring loop) over its fields (the targets it tends), and every write implement (tool) it
 wants to use must pass the weighing (the safety gate) first.
 
-```bash
-pip install ushabti-agent
+It ships as a container image, `ghcr.io/ushabti-io/ushabti-agent`. It is not published to PyPI.
+The image's entrypoint is the `ushabti` command:
 
-ushabti check-spell spell.yaml
-ushabti run --spell spell.yaml --model fake --once
+```bash
+docker run --rm -v "$PWD/spell.yaml:/etc/ushabti/spell.yaml:ro" \
+  ghcr.io/ushabti-io/ushabti-agent:<version> check-spell /etc/ushabti/spell.yaml
+```
+
+With no arguments, the image runs the spell mounted at `/etc/ushabti/spell.yaml` and serves its
+HTTP API on port 8080. It writes Papyrus (the append-only audit log) under `/var/lib/ushabti`, so
+mount a volume there.
+
+Until the first release there is no published image. Build one from the repository root:
+
+```bash
+docker build -f deploy/docker/agent.Dockerfile -t ushabti-agent:dev .
+```
+
+To run the command from a checkout instead of a container:
+
+```bash
+uv sync --all-packages
+uv run ushabti check-spell spell.yaml
+uv run ushabti run --spell spell.yaml --model fake --once
 ```
 
 Spells default to `dry_run: true`. An ushabti records what it would do and changes nothing until

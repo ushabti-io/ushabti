@@ -8,6 +8,9 @@ license = "Apache-2.0"
 license-files = ["LICENSE"]
 keywords = ["devops", "sre", "agents", "monitoring", "kubernetes", "proxmox", "shabti", "shawabti"]
 classifiers = [
+    # Not published to PyPI: this ships as a container image. PyPI refuses any
+    # upload that carries this classifier.
+    "Private :: Do Not Upload",
     "Development Status :: 2 - Pre-Alpha",
     "Intended Audience :: System Administrators",
     "Programming Language :: Python :: 3 :: Only",

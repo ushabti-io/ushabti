@@ -1,0 +1,33 @@
+version: 2
+
+updates:
+  # The actions used by the workflows. They are pinned to commit SHAs, and
+  # Dependabot moves the SHA and the version comment together.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: ci
+    groups:
+      actions:
+        patterns: ["*"]
+
+  # Python dependencies of the whole workspace, through uv.lock.
+  - package-ecosystem: uv
+    directory: /
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: chore(deps)
+    groups:
+      python-minor-and-patch:
+        update-types: [minor, patch]
+
+  # The base images in deploy/docker/*.Dockerfile.
+  - package-ecosystem: docker
+    directory: /deploy/docker
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: chore(deps)

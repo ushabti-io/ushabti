@@ -1,0 +1,177 @@
+# THIS WORKFLOW WILL NOT WORK UNTIL IT IS SET UP. It has never been run.
+#
+# Before the first release:
+#
+#   1. On PyPI, configure a Trusted Publisher for each of the three packages:
+#      ushabti, ushabti-agent, and ushabti-overseer. Each one names this
+#      repository, the workflow file release.yaml, and the environment pypi.
+#      For a name that is not on PyPI yet, add it as a pending publisher.
+#      Publishing then uses OIDC. There is no API token to store.
+#
+#   2. In this repository's settings, create an environment named pypi.
+#      Requiring a reviewer on it gives every release a manual approval.
+#
+#   3. Set the image OWNER: change IMAGE_OWNER below from the placeholder OWNER
+#      to the GitHub user or organisation that will hold the images. The images
+#      job fails on purpose while it still says OWNER.
+#
+# To release, set the same version in all three pyproject.toml files, commit,
+# and push a tag that matches it, such as v0.1.0. See CONTRIBUTING.md.
+#
+# Images are pushed to the GitHub Container Registry for linux/amd64 only.
+# Publishing to Docker Hub or for more platforms is left for later.
+
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+env:
+  # Keep in step with the uv image tag in deploy/docker/*.Dockerfile.
+  UV_VERSION: "0.13.5"
+  # Placeholder. See step 3 above.
+  IMAGE_OWNER: OWNER
+
+jobs:
+  verify:
+    name: Verify the tag and run the checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          version: ${{ env.UV_VERSION }}
+          enable-cache: true
+
+      - name: Check that the tag matches every package version
+        run: |
+          expected="${GITHUB_REF_NAME#v}"
+          for package in ushabti ushabti-agent ushabti-overseer; do
+            actual="$(uv version --package "$package" --short)"
+            if [ "$actual" != "$expected" ]; then
+              echo "::error::tag $GITHUB_REF_NAME does not match $package, which is at $actual"
+              exit 1
+            fi
+          done
+
+      - name: Install
+        run: uv sync --all-packages --locked
+
+      - name: Run the checks
+        run: |
+          uv run ruff check .
+          uv run ruff format --check .
+          uv run mypy packages
+          uv run pytest
+
+  build:
+    name: Build the sdist and wheel of all three packages
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          version: ${{ env.UV_VERSION }}
+
+      # --no-sources builds each package the way an installer will see it,
+      # without the workspace links that only exist in this repository.
+      - name: Build
+        run: uv build --all-packages --no-sources --out-dir dist
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: dist
+          path: dist/
+          if-no-files-found: error
+
+  publish:
+    name: Publish to PyPI
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: pypi
+    permissions:
+      # Trusted Publishing: PyPI accepts a short-lived OIDC token from this job.
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: dist
+          path: dist/
+
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          version: ${{ env.UV_VERSION }}
+
+      - name: Publish
+        run: uv publish --trusted-publishing always dist/*
+
+  images:
+    name: Push image (${{ matrix.image }})
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        image: [agent, overseer]
+    steps:
+      - name: Refuse to run while the image owner is a placeholder
+        run: |
+          if [ "$IMAGE_OWNER" = "OWNER" ]; then
+            echo "::error::Set IMAGE_OWNER at the top of release.yaml before releasing."
+            exit 1
+          fi
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Work out the image name
+        id: image
+        env:
+          IMAGE_NAME: ushabti-${{ matrix.image }}
+        run: |
+          # Image names must be lowercase.
+          owner="$(printf '%s' "$IMAGE_OWNER" | tr '[:upper:]' '[:lower:]')"
+          echo "name=ghcr.io/${owner}/${IMAGE_NAME}" >> "$GITHUB_OUTPUT"
+          echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Log in to the registry
+        env:
+          REGISTRY_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REGISTRY_USER: ${{ github.actor }}
+        run: printf '%s' "$REGISTRY_TOKEN" | docker login ghcr.io --username "$REGISTRY_USER" --password-stdin
+
+      - name: Build
+        env:
+          IMAGE: ${{ steps.image.outputs.name }}
+          VERSION: ${{ steps.image.outputs.version }}
+        run: >-
+          docker build
+          --file deploy/docker/${{ matrix.image }}.Dockerfile
+          --build-arg "IMAGE=${IMAGE}"
+          --tag "${IMAGE}:${VERSION}"
+          .
+
+      - name: Push
+        env:
+          IMAGE: ${{ steps.image.outputs.name }}
+          VERSION: ${{ steps.image.outputs.version }}
+        run: docker push "${IMAGE}:${VERSION}"

@@ -8,13 +8,13 @@
 # IMAGE is the name the image is published under. OWNER is a placeholder for
 # the GitHub user or organisation. See the README.
 
-ARG PYTHON_VERSION=3.14
-ARG UV_VERSION=0.13.5
-
-FROM ghcr.io/astral-sh/uv:${UV_VERSION} AS uv
+# The image tags are written out in full, not built from arguments, so that
+# Dependabot can see and update them. Keep the two python lines the same, and
+# keep the uv tag in step with UV_VERSION in .github/workflows/*.yaml.
+FROM ghcr.io/astral-sh/uv:0.13.5 AS uv
 
 # Build stage: resolve and install into a virtual environment with uv.
-FROM python:${PYTHON_VERSION}-slim AS build
+FROM python:3.14-slim AS build
 
 COPY --from=uv /uv /bin/uv
 
@@ -49,7 +49,7 @@ RUN --mount=type=cache,target=/root/.cache/uv \
         $(for extra in ${EXTRAS}; do printf -- '--extra %s ' "${extra}"; done)
 
 # Runtime stage: the slim image, the virtual environment, and a non-root user.
-FROM python:${PYTHON_VERSION}-slim AS runtime
+FROM python:3.14-slim AS runtime
 
 ARG IMAGE=ghcr.io/OWNER/ushabti-agent
 

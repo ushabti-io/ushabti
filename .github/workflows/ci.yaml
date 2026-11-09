@@ -1,0 +1,116 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Keep in step with the uv image tag in deploy/docker/*.Dockerfile.
+  UV_VERSION: "0.13.5"
+
+jobs:
+  checks:
+    name: Checks (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        # Every stable Python from the oldest supported to the newest.
+        # Add the next one here when it is released.
+        python-version: ["3.12", "3.13", "3.14", "3.15"]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          version: ${{ env.UV_VERSION }}
+          python-version: ${{ matrix.python-version }}
+          enable-cache: true
+
+      - name: Install
+        run: uv sync --all-packages --locked
+
+      - name: Lint
+        run: uv run ruff check .
+
+      - name: Check formatting
+        run: uv run ruff format --check .
+
+      - name: Type-check
+        run: uv run mypy packages
+
+      - name: Test with coverage
+        run: uv run pytest --cov --cov-report=term-missing --cov-fail-under=80
+
+      - name: Check that the SDK imports with no extras installed
+        run: >-
+          uv run --isolated --no-dev --package ushabti
+          python -c "import ushabti, ushabti.models.anthropic, ushabti.models.openai_compatible"
+
+  deployment-files:
+    name: Helm chart and Compose files
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: azure/setup-helm@9bc31f4ebc9c6b171d7bfbaa5d006ae7abdb4310 # v5.0.1
+
+      - name: Lint the chart in every mode
+        run: |
+          helm lint deploy/helm/ushabti
+          helm lint deploy/helm/ushabti --values deploy/helm/ushabti/ci/independent-values.yaml
+          helm lint deploy/helm/ushabti --values deploy/helm/ushabti/ci/overseen-values.yaml
+
+      - name: Render the chart in every mode
+        run: |
+          helm template ushabti deploy/helm/ushabti > /dev/null
+          helm template ushabti deploy/helm/ushabti \
+            --values deploy/helm/ushabti/ci/independent-values.yaml > /dev/null
+          helm template ushabti deploy/helm/ushabti \
+            --values deploy/helm/ushabti/ci/overseen-values.yaml > /dev/null
+
+      - name: Validate the Compose files
+        env:
+          # overseen.yaml refuses to render without a token. This is not a secret.
+          USHABTI_ADMIN_TOKEN: placeholder-for-validation
+        run: |
+          docker compose --file deploy/compose/solo.yaml config --quiet
+          docker compose --file deploy/compose/overseen.yaml config --quiet
+
+  images:
+    name: Build image (${{ matrix.image }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        image: [agent, overseer]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # Built and never pushed. Publishing happens only in release.yaml.
+      - name: Build
+        run: >-
+          docker build
+          --file deploy/docker/${{ matrix.image }}.Dockerfile
+          --tag ushabti-${{ matrix.image }}:ci
+          .
+
+      - name: Check that the image starts
+        run: docker run --rm ushabti-${{ matrix.image }}:ci version

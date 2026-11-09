@@ -11,7 +11,7 @@
 # Dependabot can see and update them. Keep the two python lines the same. The
 # workflows read the uv version from the line below, and CI checks that both
 # Dockerfiles name the same images.
-FROM ghcr.io/astral-sh/uv:0.13.5 AS uv
+FROM ghcr.io/astral-sh/uv:0.13.7 AS uv
 
 # Build stage: resolve and install into a virtual environment with uv.
 FROM python:3.14-slim AS build

@@ -87,6 +87,21 @@ class Settings(BaseSettings):
         return None if self.admin_token is None else self.admin_token.get_secret_value()
 
 
+class _StderrLogger:
+    """Writes each log line to whatever ``sys.stderr`` is at that moment.
+
+    Looking the stream up on every call, and not once at setup, keeps logging
+    working after stderr is redirected or replaced.
+    """
+
+    def msg(self, message: str) -> None:
+        sys.stderr.write(message + "\n")
+        sys.stderr.flush()
+
+    log = debug = info = warn = warning = msg
+    fatal = failure = err = error = critical = exception = msg
+
+
 def configure_logging(level: str = "INFO", log_format: LogFormat = LogFormat.CONSOLE) -> None:
     """Send structured logs to stderr, leaving stdout for command output."""
     renderer: structlog.typing.Processor = (
@@ -103,6 +118,6 @@ def configure_logging(level: str = "INFO", log_format: LogFormat = LogFormat.CON
             renderer,
         ],
         wrapper_class=structlog.make_filtering_bound_logger(threshold),
-        logger_factory=structlog.PrintLoggerFactory(file=sys.stderr),
+        logger_factory=lambda *args: _StderrLogger(),
         cache_logger_on_first_use=False,
     )

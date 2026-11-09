@@ -1,0 +1,50 @@
+apiVersion: ushabti/v1alpha1
+kind: Spell
+metadata:
+  name: proxmox-watcher
+spec:
+  role: Keep the homelab Proxmox nodes and their virtual machines running.
+  instructions: |
+    Watch the Proxmox nodes. When a virtual machine that should be running is
+    stopped, propose starting it. When a node is short of memory, say which
+    virtual machines use the most and do not start anything.
+  model:
+    provider: openai_compatible          # any OpenAI-compatible endpoint, such as Ollama or vLLM
+    name: ${USHABTI_MODEL}               # never hard-code a model ID
+    base_url: ${USHABTI_MODEL_BASE_URL}  # for example a local server's /v1 endpoint
+  fields:
+    - name: homelab-proxmox
+      kind: proxmox
+      nodes: [pve-node-1, pve-node-2]
+    - name: homelab-metrics
+      kind: prometheus
+      endpoint: ${PROMETHEUS_URL}
+  implements:
+    - proxmox.node_status
+    - proxmox.list_vms
+    - proxmox.start_vm
+    - prometheus.query
+  maat:
+    - id: nodes-online
+      description: Every Proxmox node is online.
+      field: homelab-proxmox
+    # This assertion is machine-checked. Each vigil tick runs `observe`, then
+    # compares the result: a failed `expect` raises isfet (something is wrong
+    # now), and a met `omen` raises an omen (it will be wrong soon).
+    - id: node-memory-has-headroom
+      description: Memory use on every node stays below 90 percent.
+      field: homelab-metrics
+      observe:
+        implement: prometheus.query
+        arguments:
+          query: max((1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes) * 100)
+      expect: {path: value, op: lt, value: 90}
+      omen: {path: value, op: ge, value: 80}
+  weighing:
+    dry_run: true
+    require_approval_for: [write]
+    max_actions_per_hour: 3
+  vigil:
+    interval: 2m
+  papyrus:
+    path: /var/lib/ushabti/papyrus.jsonl

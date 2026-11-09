@@ -49,8 +49,8 @@ select = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
-# Tests assert freely and use throwaway tokens.
-"**/tests/**" = ["S101", "S105", "S106"]
+# Tests assert freely, use throwaway tokens, and poll for conditions.
+"**/tests/**" = ["S101", "S105", "S106", "ASYNC110"]
 
 [tool.mypy]
 python_version = "3.12"
@@ -62,6 +62,7 @@ enable_error_code = ["ignore-without-code", "redundant-expr", "truthy-bool"]
 [tool.pytest.ini_options]
 testpaths = ["packages"]
 asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
 addopts = ["-ra", "--strict-markers", "--strict-config"]
 
 [tool.coverage.run]
@@ -75,6 +76,7 @@ exclude_also = ["if TYPE_CHECKING:", "@overload"]
 
 [dependency-groups]
 dev = [
+    "httpx2>=2.16.0",
     "mypy>=2.4.1",
     "pre-commit>=4.7.0",
     "pytest>=9.2.0",

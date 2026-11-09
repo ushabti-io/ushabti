@@ -1,0 +1,32 @@
+apiVersion: ushabti/v1alpha1
+kind: Spell
+metadata:
+  name: k3s-watcher
+spec:
+  role: Keep the homelab K3s cluster healthy.
+  instructions: |
+    Watch deployments in the listed namespaces. When a deployment has fewer
+    ready replicas than desired for longer than five minutes, propose a restart.
+  model:
+    provider: anthropic            # anthropic | openai_compatible | fake
+    name: ${USHABTI_MODEL}         # never hard-code a model ID
+    api_key: ${ANTHROPIC_API_KEY}  # environment reference only
+  fields:
+    - name: homelab-k3s
+      kind: kubernetes
+      namespaces: [default, monitoring]
+  implements:
+    - kubernetes.list_pods
+    - kubernetes.get_deployment
+    - kubernetes.restart_deployment
+  maat:
+    - id: deployments-ready
+      description: Every deployment has ready replicas equal to desired replicas.
+  weighing:
+    dry_run: true
+    require_approval_for: [write]
+    max_actions_per_hour: 5
+  vigil:
+    interval: 60s
+  papyrus:
+    path: /var/lib/ushabti/papyrus.jsonl

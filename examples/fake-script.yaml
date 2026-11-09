@@ -1,0 +1,15 @@
+# A script for the fake model provider: the replies it gives, in order.
+#
+# It lets you watch a summons (a unit of work) pass through the weighing (the
+# safety gate) without a real model or a real cluster:
+#
+#   USHABTI_FAKE_SCRIPT=examples/fake-script.yaml \
+#     ushabti run --spell examples/spells/k3s-watcher.yaml --model fake
+#
+# The first reply proposes a write implement. Because the spell has
+# dry_run: true, the weighing answers DRY_RUN and nothing is changed.
+- content: The web deployment has fewer ready replicas than desired. I will restart it.
+  tool_calls:
+    - name: kubernetes.restart_deployment
+      arguments: {namespace: default, name: web}
+- content: The restart was recorded as a dry run. Nothing was changed.

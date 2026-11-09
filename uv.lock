@@ -2049,6 +2049,22 @@ provides-extras = ["anthropic", "openai", "kubernetes", "proxmox", "prometheus"]
 name = "ushabti-overseer"
 version = "0.1.0.dev0"
 source = { editable = "packages/ushabti-overseer" }
+dependencies = [
+    { name = "fastapi" },
+    { name = "httpx" },
+    { name = "typer" },
+    { name = "ushabti" },
+    { name = "uvicorn" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "fastapi", specifier = ">=0.162.2" },
+    { name = "httpx", specifier = ">=0.28.1" },
+    { name = "typer", specifier = ">=0.28.0" },
+    { name = "ushabti", editable = "packages/ushabti" },
+    { name = "uvicorn", specifier = ">=0.54.0" },
+]
 
 [[package]]
 name = "ushabti-workspace"

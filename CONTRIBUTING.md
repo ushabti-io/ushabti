@@ -188,9 +188,10 @@ Secrets only.
 
 ## Releases
 
-Nothing is published yet. The release workflow needs setup on PyPI before it
-can run. The comment at the top of `.github/workflows/release.yaml` lists the
-steps.
+Pushing a `v*` tag runs the release workflow. The comment at the top of
+`.github/workflows/release.yaml` says what it depends on. The PyPI job waits
+for a reviewer of the `pypi` environment to approve it. The image jobs do not
+wait.
 
 Only the SDK, `ushabti`, goes to PyPI. The agent and the overseer ship as
 container images on `ghcr.io/ushabti-io`, and their packages carry the

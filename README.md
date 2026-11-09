@@ -173,8 +173,9 @@ as container images.
 
 ## Status
 
-This repository is a scaffold. Nothing is published to PyPI or to a container
-registry yet.
+This repository is a scaffold. Pre-releases of the SDK are on
+[PyPI](https://pypi.org/project/ushabti/), and each release pushes the agent
+and overseer images to `ghcr.io/ushabti-io`.
 
 What is implemented and tested: spell loading and validation, the weighing,
 Papyrus, the vigil loop, summons handling, halt and resume, the overseer's
@@ -186,9 +187,9 @@ Each is declared with its kind and its parameters, and raises
 `NotImplementedError`. Until they are built, an ushabti pointed at a real
 cluster can be summoned and will reason, but cannot observe or act.
 
-The container images will be published to `ghcr.io/ushabti-io` by the release
-workflow. None exists until the first release, so for now build them locally,
-as the quick start does.
+The quick start builds the images locally, so it always runs the code you have
+checked out. Each release also pushes them to `ghcr.io/ushabti-io`, tagged with
+the version.
 
 ## License
 

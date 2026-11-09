@@ -38,8 +38,7 @@ ushabti:
 
 agent:
   image:
-    # Published by the release workflow. Until the first release there is no
-    # image here: build one and point this at your own registry.
+    # Pushed by the release workflow, tagged with the version.
     repository: ghcr.io/ushabti-io/ushabti-agent
     # Defaults to the chart's appVersion.
     tag: ""

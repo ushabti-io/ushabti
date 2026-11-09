@@ -1,15 +1,17 @@
-# THIS WORKFLOW WILL NOT WORK UNTIL IT IS SET UP. It has never been run.
+# Releases the SDK to PyPI and pushes the agent and overseer images.
 #
-# Before the first release:
+# It depends on two things that live outside this file:
 #
-#   1. On PyPI, the project ushabti needs a Trusted Publisher that names this
+#   1. On PyPI, the project ushabti has a Trusted Publisher that names this
 #      repository, the workflow file release.yaml, and the environment pypi.
-#      Until the project exists, that is a pending publisher on your account.
-#      Publishing then uses OIDC. There is no API token to store.
+#      Publishing uses OIDC. There is no API token to store.
 #
-#   2. In this repository's settings, create an environment named pypi.
-#      Requiring a reviewer on it gives every release a manual approval. On
-#      the GitHub Free plan, environments need the repository to be public.
+#   2. This repository has an environment named pypi with a required
+#      reviewer, so the PyPI job waits for a manual approval. On the GitHub
+#      Free plan, environments need the repository to be public.
+#
+# The image jobs do not use that environment. They push as soon as the checks
+# pass, without waiting for approval.
 #
 # Only the SDK, ushabti, is published to PyPI. The agent and the overseer ship
 # as container images, pushed to ghcr.io/ushabti-io (IMAGE_OWNER below). Their

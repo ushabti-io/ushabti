@@ -18,7 +18,7 @@ docker run --rm -p 127.0.0.1:8081:8081 -e USHABTI_ADMIN_TOKEN \
 The overseer and every ushabti share that token. An ushabti presents it to register, and the
 overseer presents it to route a summons or to fan out a halt (the kill switch).
 
-Until the first release there is no published image. Build one from the repository root:
+To build the image yourself, from the repository root:
 
 ```bash
 docker build -f deploy/docker/overseer.Dockerfile -t ushabti-overseer:dev .

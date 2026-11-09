@@ -18,7 +18,7 @@ With no arguments, the image runs the spell mounted at `/etc/ushabti/spell.yaml`
 HTTP API on port 8080. It writes Papyrus (the append-only audit log) under `/var/lib/ushabti`, so
 mount a volume there.
 
-Until the first release there is no published image. Build one from the repository root:
+To build the image yourself, from the repository root:
 
 ```bash
 docker build -f deploy/docker/agent.Dockerfile -t ushabti-agent:dev .

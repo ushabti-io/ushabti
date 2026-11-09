@@ -45,7 +45,8 @@ class Settings(BaseSettings):
     """Name of this ushabti. Defaults to the name of its spell."""
 
     admin_token: SecretStr | None = None
-    """Bearer token for the halt and resume endpoints. Unset disables them."""
+    """Bearer token for every endpoint that makes an ushabti or overseer do
+    something: summons, halt, resume, and registration. Unset disables them."""
 
     overseer_url: str | None = None
     """Base URL of the overseer. Required in `overseen` mode."""
@@ -80,6 +81,11 @@ class Settings(BaseSettings):
             raise ValueError("USHABTI_MODE=overseen requires USHABTI_OVERSEER_URL")
         if self.overseer_url is not None and self.mode is not Mode.OVERSEEN:
             raise ValueError("USHABTI_OVERSEER_URL is set, so USHABTI_MODE must be overseen")
+        if self.mode is Mode.OVERSEEN and self.admin_token is None:
+            raise ValueError(
+                "USHABTI_MODE=overseen requires USHABTI_ADMIN_TOKEN: "
+                "an overseer only accepts an ushabti that presents it"
+            )
         return self
 
     def admin_token_value(self) -> str | None:

@@ -12,10 +12,11 @@ from ushabti_agent.overseer_client import OverseerClient
 from ushabti_agent.server import create_app
 
 OVERSEER = "http://overseer.example.invalid:8081"
+TOKEN = "test-admin-token"
 
 
-def client_answering(handler: httpx.MockTransport) -> OverseerClient:
-    return OverseerClient(f"{OVERSEER}/", client=httpx.AsyncClient(transport=handler))
+def client_answering(handler: httpx.MockTransport, token: str | None = TOKEN) -> OverseerClient:
+    return OverseerClient(f"{OVERSEER}/", token=token, client=httpx.AsyncClient(transport=handler))
 
 
 async def test_here_am_i_is_posted_as_json(tmp_path: Path) -> None:
@@ -33,8 +34,21 @@ async def test_here_am_i_is_posted_as_json(tmp_path: Path) -> None:
     assert request.method == "POST"
     assert str(request.url) == f"{OVERSEER}/here-am-i"
     assert request.headers["content-type"] == "application/json"
+    assert request.headers["authorization"] == f"Bearer {TOKEN}"
     assert HereAmI.model_validate(json.loads(request.content)) == message
     await client.close()
+
+
+async def test_without_a_token_no_authorization_header_is_sent(tmp_path: Path) -> None:
+    seen: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen.append(request)
+        return httpx.Response(404)
+
+    client = client_answering(httpx.MockTransport(handler), token=None)
+    assert await client.here_am_i(World(tmp_path).ushabti.here_am_i()) is False
+    assert "authorization" not in seen[0].headers
 
 
 async def test_an_overseer_that_refuses_is_reported_not_raised(tmp_path: Path) -> None:

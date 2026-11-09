@@ -32,9 +32,12 @@ def is_halted(world: World) -> bool:
     return world.ushabti.halted
 
 
-def client_for(world: World, *, token: str | None = TOKEN) -> TestClient:
+def client_for(
+    world: World, *, token: str | None = TOKEN, authenticated: bool = True
+) -> TestClient:
     settings = Settings(admin_token=token)
-    return TestClient(create_app(world.ushabti, settings, background=False))
+    app = create_app(world.ushabti, settings, background=False)
+    return TestClient(app, headers=BEARER if authenticated else None)
 
 
 @pytest.fixture
@@ -146,15 +149,32 @@ def test_an_escalated_summons_is_visible_through_the_api(tmp_path: Path) -> None
 # Halt and resume
 
 
-def test_halt_and_resume_need_the_bearer_token(client: TestClient, world: World) -> None:
-    for path in ("/halt", "/resume"):
-        missing = client.post(path)
+GUARDED = [
+    ("POST", "/halt"),
+    ("POST", "/resume"),
+    ("POST", "/summons"),
+    ("GET", "/summons/some-id"),
+]
+
+
+@pytest.mark.parametrize(("method", "path"), GUARDED)
+def test_everything_that_acts_needs_the_bearer_token(world: World, method: str, path: str) -> None:
+    body = {"source": "operator", "reason": "Restart it."} if path == "/summons" else None
+    with client_for(world, authenticated=False) as client:
+        missing = client.request(method, path, json=body)
         assert missing.status_code == 401
         assert missing.headers["www-authenticate"] == "Bearer"
-        assert client.post(path, headers={"Authorization": "Bearer wrong"}).status_code == 401
-        assert client.post(path, headers={"Authorization": f"Basic {TOKEN}"}).status_code == 401
-        assert client.post(path, headers={"Authorization": TOKEN}).status_code == 401
+        for wrong in ("Bearer wrong", f"Basic {TOKEN}", TOKEN, "Bearer "):
+            refused = client.request(method, path, json=body, headers={"Authorization": wrong})
+            assert refused.status_code == 401, wrong
     assert not is_halted(world)
+    assert world.events() == [], "a refused request leaves no trace and queues nothing"
+
+
+def test_health_and_metrics_need_no_token(world: World) -> None:
+    with client_for(world, authenticated=False) as client:
+        assert client.get("/healthz").status_code == 200
+        assert client.get("/metrics").status_code == 200
 
 
 def test_halt_takes_effect_immediately_and_resume_undoes_it(
@@ -180,14 +200,18 @@ def test_halt_over_http_needs_no_model(tmp_path: Path) -> None:
         assert client.post("/halt", headers=BEARER).json()["halted"] is True
 
 
-def test_without_a_token_halt_and_resume_are_disabled(world: World) -> None:
-    with client_for(world, token=None) as client:
-        for path in ("/halt", "/resume"):
-            for headers in ({}, BEARER):
-                response = client.post(path, headers=headers)
-                assert response.status_code == 404
-                assert "USHABTI_ADMIN_TOKEN is not set" in response.json()["detail"]
+@pytest.mark.parametrize(("method", "path"), GUARDED)
+def test_without_a_token_everything_that_acts_is_disabled(
+    world: World, method: str, path: str
+) -> None:
+    body = {"source": "operator", "reason": "Restart it."} if path == "/summons" else None
+    with client_for(world, token=None, authenticated=False) as client:
+        for headers in ({}, BEARER):
+            response = client.request(method, path, json=body, headers=headers)
+            assert response.status_code == 404
+            assert "USHABTI_ADMIN_TOKEN is not set" in response.json()["detail"]
     assert not is_halted(world)
+    assert world.events() == []
 
 
 # The app keeps the vigil while it runs
@@ -197,9 +221,9 @@ def test_the_running_app_keeps_the_vigil_and_answers_summonses(tmp_path: Path) -
     provider = FakeProvider([proposing(write_call())])
     spell = make_spell(weighing=LOOSE, maat=[], vigil={"interval": "20ms"})
     world = World(tmp_path, provider=provider, spell=spell)
-    app = create_app(world.ushabti, Settings())
+    app = create_app(world.ushabti, Settings(admin_token=TOKEN))
 
-    with TestClient(app) as client:
+    with TestClient(app, headers=BEARER) as client:
         summons_id = client.post(
             "/summons", json={"source": "operator", "reason": "Restart it."}
         ).json()["id"]

@@ -53,7 +53,7 @@ def create_app(
         running = [asyncio.ensure_future(ushabti.run(stop))]
         client = overseer
         if client is None and settings.overseer_url is not None:
-            client = OverseerClient(settings.overseer_url)
+            client = OverseerClient(settings.overseer_url, token=settings.admin_token_value())
         if client is not None:
             running.append(
                 asyncio.ensure_future(client.run(ushabti, settings.here_am_i_interval, stop))
@@ -78,7 +78,7 @@ def create_app(
         if token is None:
             raise HTTPException(
                 status.HTTP_404_NOT_FOUND,
-                "halt and resume are disabled because USHABTI_ADMIN_TOKEN is not set",
+                "this endpoint is disabled because USHABTI_ADMIN_TOKEN is not set",
             )
         scheme, _, given = (authorization or "").partition(" ")
         matches = secrets.compare_digest(given.strip().encode(), token.encode())
@@ -99,7 +99,13 @@ def create_app(
         """Prometheus metrics."""
         return Response(generate_latest(ushabti.metrics.registry), media_type=CONTENT_TYPE_LATEST)
 
-    @app.post("/summons", status_code=status.HTTP_202_ACCEPTED)
+    # A summons puts a caller's words in front of the model and can lead to
+    # write actions, so it needs the same token as halt and resume.
+    @app.post(
+        "/summons",
+        status_code=status.HTTP_202_ACCEPTED,
+        dependencies=[Depends(require_admin)],
+    )
     async def accept_summons(summons: Summons) -> SummonsAccepted:
         """Queue a summons (a unit of work) from an overseer or an operator."""
         if summons.source is SummonsSource.VIGIL:
@@ -109,7 +115,7 @@ def create_app(
             )
         return SummonsAccepted(id=ushabti.submit(summons).id)
 
-    @app.get("/summons/{summons_id}")
+    @app.get("/summons/{summons_id}", dependencies=[Depends(require_admin)])
     async def read_summons(summons_id: str) -> Summons:
         """The current state of a summons, including whether it was escalated."""
         summons = ushabti.summons(summons_id)

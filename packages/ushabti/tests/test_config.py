@@ -79,6 +79,9 @@ def test_overseen_mode_needs_an_overseer_url(monkeypatch: pytest.MonkeyPatch) ->
     with pytest.raises(ValidationError, match="requires USHABTI_OVERSEER_URL"):
         Settings()
     monkeypatch.setenv("USHABTI_OVERSEER_URL", "http://overseer.example.invalid:8081")
+    with pytest.raises(ValidationError, match="requires USHABTI_ADMIN_TOKEN"):
+        Settings()
+    monkeypatch.setenv("USHABTI_ADMIN_TOKEN", "test-admin-token")
     assert Settings().mode is Mode.OVERSEEN
 
 

@@ -18,8 +18,18 @@ _log = structlog.get_logger(__name__)
 class OverseerClient:
     """Sends "Here am I" messages to one overseer."""
 
-    def __init__(self, base_url: str, *, client: httpx.AsyncClient | None = None) -> None:
+    def __init__(
+        self,
+        base_url: str,
+        *,
+        token: str | None = None,
+        client: httpx.AsyncClient | None = None,
+    ) -> None:
         self.base_url = base_url.rstrip("/")
+        self._headers = {"Content-Type": "application/json"}
+        if token is not None:
+            # The overseer only registers an ushabti that presents the shared token.
+            self._headers["Authorization"] = f"Bearer {token}"
         self._client = client or httpx.AsyncClient(timeout=10.0)
 
     async def here_am_i(self, message: HereAmI) -> bool:
@@ -32,7 +42,7 @@ class OverseerClient:
             response = await self._client.post(
                 f"{self.base_url}/here-am-i",
                 content=message.model_dump_json(),
-                headers={"Content-Type": "application/json"},
+                headers=self._headers,
             )
             response.raise_for_status()
         except httpx.HTTPError as error:

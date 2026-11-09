@@ -19,6 +19,7 @@ pytestmark = pytest.mark.skipif(
 
 PAGES = [
     REPO / "README.md",
+    REPO / "AGENTS.md",
     REPO / "CONTRIBUTING.md",
     REPO / "SECURITY.md",
     REPO / "CODE_OF_CONDUCT.md",
@@ -146,6 +147,16 @@ def test_the_contributing_example_is_a_real_implement() -> None:
     assert len(made) == 1
     registry = ImplementRegistry([made[0]()])
     assert registry.names() == ("proxmox.node_uptime",)
+
+
+def test_claude_md_imports_agents_md_so_every_agent_reads_one_file() -> None:
+    claude = (REPO / "CLAUDE.md").read_text(encoding="utf-8")
+    assert claude.splitlines()[0] == "@AGENTS.md", "CLAUDE.md must import AGENTS.md first"
+
+    agents = (REPO / "AGENTS.md").read_text(encoding="utf-8")
+    assert len(agents.splitlines()) < 200, "keep AGENTS.md short: long files are followed less"
+    for command in ("uv run ruff check .", "uv run mypy packages", "uv run pytest"):
+        assert command in agents, command
 
 
 def test_only_the_sdk_can_be_uploaded_to_pypi() -> None:

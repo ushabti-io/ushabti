@@ -159,6 +159,7 @@ These hold out of the box. Each one must be loosened on purpose, and
 - [Spells](docs/spells.md): the `spell.yaml` reference.
 - [Contributing](CONTRIBUTING.md), [Security](SECURITY.md), and the
   [Code of Conduct](CODE_OF_CONDUCT.md).
+- [AGENTS.md](AGENTS.md): the working rules for coding agents.
 
 ## Packages
 

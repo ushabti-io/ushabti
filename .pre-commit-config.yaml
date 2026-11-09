@@ -1,0 +1,24 @@
+# The hooks run the tools from the uv environment, so pre-commit and CI always
+# use the versions recorded in uv.lock. Install with: uv run pre-commit install
+repos:
+  - repo: local
+    hooks:
+      - id: ruff-check
+        name: ruff check
+        entry: uv run ruff check --fix --exit-non-zero-on-fix
+        language: system
+        types_or: [python, pyi]
+        require_serial: true
+      - id: ruff-format
+        name: ruff format
+        entry: uv run ruff format
+        language: system
+        types_or: [python, pyi]
+        require_serial: true
+      - id: mypy
+        name: mypy (strict)
+        entry: uv run mypy packages
+        language: system
+        types_or: [python, pyi]
+        pass_filenames: false
+        require_serial: true

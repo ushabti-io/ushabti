@@ -1,0 +1,39 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+
+# uv (uv.lock is committed on purpose)
+.venv/
+
+# Tool caches and reports
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+
+# Editors and OS
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Secrets never belong in the repository. They come from the environment.
+.env
+.env.*
+!.env.example
+
+# Papyrus output files (the append-only audit log an ushabti writes)
+papyrus.jsonl
+*.papyrus.jsonl
+papyrus/
+
+# Helm
+deploy/helm/*/charts/*.tgz

@@ -1,0 +1,26 @@
+[project]
+name = "ushabti"
+version = "0.1.0.dev0"
+description = "SDK for Ushabti, an open-source DevOps agent harness: spells, implements, weighing, and papyrus."
+readme = "README.md"
+requires-python = ">=3.12"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
+keywords = ["devops", "sre", "agents", "monitoring", "kubernetes", "proxmox", "shabti", "shawabti"]
+classifiers = [
+    "Development Status :: 2 - Pre-Alpha",
+    "Intended Audience :: System Administrators",
+    "Programming Language :: Python :: 3 :: Only",
+    "Topic :: System :: Monitoring",
+    "Topic :: System :: Systems Administration",
+    "Typing :: Typed",
+]
+dependencies = []
+
+[project.urls]
+# OWNER is a placeholder for the GitHub user or organisation. See the README.
+Repository = "https://github.com/OWNER/ushabti"
+
+[build-system]
+requires = ["uv_build>=0.13.5,<0.14.0"]
+build-backend = "uv_build"

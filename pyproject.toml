@@ -1,0 +1,83 @@
+[project]
+name = "ushabti-workspace"
+version = "0.1.0.dev0"
+description = "Workspace root for Ushabti, an open-source DevOps agent harness. Not published."
+readme = "README.md"
+requires-python = ">=3.12"
+license = "Apache-2.0"
+classifiers = ["Private :: Do Not Upload"]
+dependencies = [
+    "ushabti",
+    "ushabti-agent",
+    "ushabti-overseer",
+]
+
+[tool.uv]
+# The root only ties the workspace together. It is never built or published.
+package = false
+
+[tool.uv.workspace]
+members = ["packages/*"]
+
+[tool.uv.sources]
+ushabti = { workspace = true }
+ushabti-agent = { workspace = true }
+ushabti-overseer = { workspace = true }
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["packages/*/src", "packages/*/tests"]
+
+[tool.ruff.lint]
+select = [
+    "E",     # pycodestyle errors
+    "W",     # pycodestyle warnings
+    "F",     # pyflakes
+    "I",     # isort
+    "N",     # pep8-naming
+    "UP",    # pyupgrade
+    "B",     # flake8-bugbear
+    "C4",    # flake8-comprehensions
+    "SIM",   # flake8-simplify
+    "PTH",   # flake8-use-pathlib
+    "PT",    # flake8-pytest-style
+    "S",     # flake8-bandit
+    "T20",   # flake8-print
+    "ASYNC", # flake8-async
+    "RUF",   # ruff-specific rules
+]
+
+[tool.ruff.lint.per-file-ignores]
+# Tests assert freely and use throwaway tokens.
+"**/tests/**" = ["S101", "S105", "S106"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+warn_unreachable = true
+enable_error_code = ["ignore-without-code", "redundant-expr", "truthy-bool"]
+
+[tool.pytest.ini_options]
+testpaths = ["packages"]
+asyncio_mode = "auto"
+addopts = ["-ra", "--strict-markers", "--strict-config"]
+
+[tool.coverage.run]
+branch = true
+source_pkgs = ["ushabti", "ushabti_agent", "ushabti_overseer"]
+
+[tool.coverage.report]
+show_missing = true
+skip_empty = true
+exclude_also = ["if TYPE_CHECKING:", "@overload"]
+
+[dependency-groups]
+dev = [
+    "mypy>=2.4.1",
+    "pre-commit>=4.7.0",
+    "pytest>=9.2.0",
+    "pytest-asyncio>=1.4.1.post1",
+    "pytest-cov>=7.1.0",
+    "ruff>=0.17.4",
+]

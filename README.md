@@ -141,7 +141,8 @@ These hold out of the box. Each one must be loosened on purpose, and
 - **A spell can only use the implements it lists.** Anything else is rejected.
 - **There is no shell implement.**
 - **Kubernetes RBAC is read-only by default.** Write verbs need
-  `agent.rbac.allowWrite: true`.
+  `agent.rbac.allowWrite: true`, and are then granted only in the namespaces
+  you list.
 - **Papyrus is append-only.** Nothing rewrites or truncates it.
 - **Halt works without the model.** `ushabti halt` and `POST /halt` need no
   model call and take effect immediately.

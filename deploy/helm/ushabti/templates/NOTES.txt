@@ -18,7 +18,7 @@ Safety:
 
   - Every spell ships with dry_run: true. An ushabti records what it would do
     in Papyrus (its audit log) and changes nothing.
-  - RBAC is {{ if .Values.agent.rbac.allowWrite }}READ-WRITE: agent.rbac.allowWrite is true{{ else }}read-only: agent.rbac.allowWrite is false{{ end }}.
+  - RBAC is {{ if .Values.agent.rbac.allowWrite }}READ-WRITE in {{ join ", " .Values.agent.rbac.writeNamespaces }}: agent.rbac.allowWrite is true{{ else }}read-only: agent.rbac.allowWrite is false{{ end }}.
 {{- if .Values.adminToken.existingSecret }}
   - Summons, halt, and resume need the token in the Secret {{ .Values.adminToken.existingSecret }}.
 {{- else }}

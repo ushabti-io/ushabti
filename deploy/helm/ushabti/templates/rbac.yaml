@@ -1,10 +1,10 @@
 {{- if .Values.agent.rbac.create }}
-# What an ushabti may do in the cluster. Read-only unless
-# agent.rbac.allowWrite is true.
+{{- $name := printf "%s-%s" (include "ushabti.fullname" .) .Release.Namespace }}
+# What an ushabti may read in the cluster. This role is always read-only.
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: {{ include "ushabti.fullname" . }}-{{ .Release.Namespace }}
+  name: {{ $name }}
   labels:
     {{- include "ushabti.labels" . | nindent 4 }}
 rules:
@@ -14,25 +14,56 @@ rules:
   - apiGroups: ["apps"]
     resources: ["deployments", "replicasets", "statefulsets", "daemonsets"]
     verbs: ["get", "list", "watch"]
-  {{- if .Values.agent.rbac.allowWrite }}
-  # Opt-in write verbs: enough to restart and to scale a deployment.
-  - apiGroups: ["apps"]
-    resources: ["deployments", "deployments/scale"]
-    verbs: ["patch", "update"]
-  {{- end }}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: {{ include "ushabti.fullname" . }}-{{ .Release.Namespace }}
+  name: {{ $name }}
   labels:
     {{- include "ushabti.labels" . | nindent 4 }}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: {{ include "ushabti.fullname" . }}-{{ .Release.Namespace }}
+  name: {{ $name }}
 subjects:
   - kind: ServiceAccount
     name: {{ include "ushabti.serviceAccountName" . }}
     namespace: {{ .Release.Namespace }}
+{{- if .Values.agent.rbac.allowWrite }}
+{{- range .Values.agent.rbac.writeNamespaces }}
+---
+# Opt-in write verbs, granted in this namespace only: enough to restart a
+# deployment (patch) and to scale one (patch or update its scale).
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ $name }}-write
+  namespace: {{ . }}
+  labels:
+    {{- include "ushabti.labels" $ | nindent 4 }}
+rules:
+  - apiGroups: ["apps"]
+    resources: ["deployments"]
+    verbs: ["patch"]
+  - apiGroups: ["apps"]
+    resources: ["deployments/scale"]
+    verbs: ["patch", "update"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ $name }}-write
+  namespace: {{ . }}
+  labels:
+    {{- include "ushabti.labels" $ | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: {{ $name }}-write
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "ushabti.serviceAccountName" $ }}
+    namespace: {{ $.Release.Namespace }}
+{{- end }}
+{{- end }}
 {{- end }}

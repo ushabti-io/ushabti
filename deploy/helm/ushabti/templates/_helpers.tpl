@@ -69,6 +69,10 @@ change. This runs for helm lint and helm template as well as for installs.
 {{- if and (eq .Values.mode "overseen") (not .Values.adminToken.existingSecret) }}
 {{- fail "mode is overseen, which needs the admin token: set adminToken.existingSecret to the name of a Secret that holds it." }}
 {{- end }}
+{{- $rbac := .Values.agent.rbac }}
+{{- if and $rbac.create $rbac.allowWrite (not $rbac.writeNamespaces) }}
+{{- fail "agent.rbac.allowWrite is true, so say where: list the namespaces an ushabti may change in agent.rbac.writeNamespaces. Write access is never cluster-wide." }}
+{{- end }}
 {{- $seen := dict }}
 {{- range .Values.ushabti }}
 {{- if hasKey $seen .name }}

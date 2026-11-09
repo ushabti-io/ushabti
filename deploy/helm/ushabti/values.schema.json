@@ -50,7 +50,12 @@
           "additionalProperties": false,
           "properties": {
             "create": {"type": "boolean"},
-            "allowWrite": {"type": "boolean"}
+            "allowWrite": {"type": "boolean"},
+            "writeNamespaces": {
+              "type": "array",
+              "items": {"type": "string", "minLength": 1},
+              "uniqueItems": true
+            }
           }
         },
         "secretEnv": {

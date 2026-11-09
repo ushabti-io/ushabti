@@ -72,7 +72,7 @@ verdict. The same guard means it cannot run a write that way.
 | `require_approval_for: [write]` | Every write needs approval, so none runs even with `dry_run` off. | Set `spec.weighing.require_approval_for: []`, or list only the implements that should still need approval. |
 | `max_actions_per_hour: 5` | At most 5 writes run in any one hour. | Raise `spec.weighing.max_actions_per_hour`. `0` allows none. |
 | A spell can only use the implements it lists. | A model cannot reach for a tool the spell did not grant. | Add the implement's name to `spec.implements`. |
-| Kubernetes RBAC is read-only. | The cluster refuses writes whatever the ushabti attempts. | Set `agent.rbac.allowWrite: true` in the Helm values. |
+| Kubernetes RBAC is read-only. | The cluster refuses writes whatever the ushabti attempts. | Set `agent.rbac.allowWrite: true` in the Helm values and list the namespaces in `agent.rbac.writeNamespaces`. Write verbs are granted in those namespaces only, never cluster-wide. |
 | No admin token is set, so summons, halt, and resume are disabled. | Nobody on the network can hand the ushabti work. | Set `USHABTI_ADMIN_TOKEN`, from a Secret. Callers must then present it. |
 | The HTTP server binds to `127.0.0.1`. | Only the same host can reach it. | Set `USHABTI_HOST=0.0.0.0`. The container images do this. |
 | The Helm NetworkPolicy allows no ingress to an ushabti. | Other pods cannot reach its API. | Add peers to `networkPolicy.ingressFrom`. In overseen mode the overseer (the optional orchestrator) is allowed already. |
@@ -188,7 +188,8 @@ have been made.
 2. Set `spec.weighing.dry_run: false`.
 3. Remove the implement, and `write`, from `spec.weighing.require_approval_for`.
 4. Check that `spec.weighing.max_actions_per_hour` is what you want.
-5. On Kubernetes, set `agent.rbac.allowWrite: true`.
+5. On Kubernetes, set `agent.rbac.allowWrite: true` and list the namespaces it
+   may change in `agent.rbac.writeNamespaces`.
 6. Make sure Papyrus is on persistent storage, so a halt survives a restart.
 7. Set an admin token, so the ushabti can be halted.
 
@@ -207,5 +208,10 @@ Before step 2, run with `dry_run: true` for a while and read Papyrus. Every
   a workforce. Anyone who has it can submit a summons.
 - **A hostile spell.** The person who writes the spell decides what the ushabti
   may do. Review spells the way you review code.
+- **A wider patch than a restart.** Kubernetes cannot grant "restart only". The
+  opt-in `patch` verb on deployments lets an ushabti change any part of a
+  deployment in the namespaces you list. The implements only restart and scale,
+  but the permission itself is broader. An admission policy that limits what the
+  ushabti's ServiceAccount may patch would close that gap, and is not built.
 
 Report a vulnerability as described in [SECURITY.md](../SECURITY.md).

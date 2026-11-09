@@ -3,7 +3,8 @@
 # Safety defaults, all of which you must loosen on purpose:
 #   - every spell below has dry_run: true, so an ushabti records what it would
 #     do and changes nothing;
-#   - RBAC is read-only unless agent.rbac.allowWrite is true;
+#   - RBAC is read-only unless agent.rbac.allowWrite is true, and then only
+#     in the namespaces listed in agent.rbac.writeNamespaces;
 #   - secrets are only ever references to existing Secrets, never values.
 
 # Topology.
@@ -70,10 +71,16 @@ agent:
 
   rbac:
     create: true
-    # false: the ClusterRole only allows get, list, and watch.
-    # true:  it also allows patch and update on deployments and their scale,
-    #        which is what restarting and scaling a deployment need.
+    # The ClusterRole only ever allows get, list, and watch.
+    #
+    # Write access takes both keys below. With allowWrite true, a Role in each
+    # namespace of writeNamespaces lets an ushabti patch deployments and change
+    # their scale there, which is what a restart and a scale need. Nothing is
+    # granted in any other namespace.
     allowWrite: false
+    writeNamespaces: []
+    #  - default
+    #  - monitoring
 
   # Papyrus (the append-only audit log) also holds the halt state and the
   # hourly action count. With persistence off, a rescheduled pod forgets a halt.

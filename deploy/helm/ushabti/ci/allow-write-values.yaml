@@ -1,0 +1,7 @@
+# Test values: the opt-in write path. Write verbs land in these namespaces only.
+agent:
+  rbac:
+    allowWrite: true
+    writeNamespaces:
+      - default
+      - monitoring

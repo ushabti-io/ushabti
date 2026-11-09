@@ -74,6 +74,7 @@ jobs:
           helm lint deploy/helm/ushabti
           helm lint deploy/helm/ushabti --values deploy/helm/ushabti/ci/independent-values.yaml
           helm lint deploy/helm/ushabti --values deploy/helm/ushabti/ci/overseen-values.yaml
+          helm lint deploy/helm/ushabti --values deploy/helm/ushabti/ci/allow-write-values.yaml
 
       - name: Render the chart in every mode
         run: |
@@ -82,6 +83,8 @@ jobs:
             --values deploy/helm/ushabti/ci/independent-values.yaml > /dev/null
           helm template ushabti deploy/helm/ushabti \
             --values deploy/helm/ushabti/ci/overseen-values.yaml > /dev/null
+          helm template ushabti deploy/helm/ushabti \
+            --values deploy/helm/ushabti/ci/allow-write-values.yaml > /dev/null
 
       - name: Validate the Compose files
         env:

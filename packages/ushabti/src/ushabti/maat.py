@@ -83,11 +83,12 @@ class MaatAssertion(StrictModel):
     context for the model only and is never evaluated."""
 
     expect: Condition | None = None
-    """Condition that must hold. When it does not, the vigil raises isfet."""
+    """Condition that must hold. When it does not, the vigil raises isfet (drift:
+    something is wrong now)."""
 
     omen: Condition | None = None
     """Early-warning condition. When it holds while `expect` still holds, the
-    vigil raises an omen."""
+    vigil raises an omen (a prediction that something will be wrong soon)."""
 
     @model_validator(mode="after")
     def _check_is_complete(self) -> Self:

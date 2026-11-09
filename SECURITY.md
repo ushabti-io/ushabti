@@ -7,13 +7,11 @@ are taken seriously. Thank you for making one.
 
 Please do not open a public issue for a vulnerability.
 
-Report it privately to:
-
-**`SECURITY_CONTACT`**
-
-> This is a placeholder. The maintainer must replace it with a real contact
-> before the project is published: an email address, or a link to the
-> repository's private vulnerability reporting form.
+Report it privately through GitHub. Open the repository's
+[Security tab](https://github.com/ushabti-io/ushabti/security) and choose
+"Report a vulnerability", or go straight to the
+[private report form](https://github.com/ushabti-io/ushabti/security/advisories/new).
+Only the maintainers can see what you send.
 
 Include what you can of the following:
 

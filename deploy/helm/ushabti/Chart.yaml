@@ -1,0 +1,19 @@
+apiVersion: v2
+name: ushabti
+description: >-
+  Ushabti, an open-source DevOps agent harness. Deploys one or more ushabti
+  (agents) and, in overseen mode, the overseer that coordinates them.
+type: application
+version: 0.1.0
+appVersion: "0.1.0.dev0"
+keywords:
+  - devops
+  - sre
+  - agents
+  - monitoring
+  - shabti
+  - shawabti
+# OWNER is a placeholder for the GitHub user or organisation. See the README.
+home: https://github.com/OWNER/ushabti
+sources:
+  - https://github.com/OWNER/ushabti

@@ -1,0 +1,24 @@
+{{- $root := . }}
+{{- $fullname := include "ushabti.fullname" . }}
+{{- range .Values.ushabti }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $fullname }}-{{ .name }}
+  labels:
+    {{- include "ushabti.labels" $root | nindent 4 }}
+    app.kubernetes.io/component: ushabti
+    ushabti-name: {{ .name }}
+spec:
+  type: ClusterIP
+  selector:
+    {{- include "ushabti.selectorLabels" $root | nindent 4 }}
+    app.kubernetes.io/component: ushabti
+    ushabti-name: {{ .name }}
+  ports:
+    - name: http
+      port: {{ $root.Values.agent.port }}
+      targetPort: http
+      protocol: TCP
+{{- end }}

@@ -1,0 +1,176 @@
+# Values for the ushabti chart.
+#
+# Safety defaults, all of which you must loosen on purpose:
+#   - every spell below has dry_run: true, so an ushabti records what it would
+#     do and changes nothing;
+#   - RBAC is read-only unless agent.rbac.allowWrite is true;
+#   - secrets are only ever references to existing Secrets, never values.
+
+# Topology.
+#   solo         one ushabti (one agent instance), no overseer
+#   independent  several ushabti, each on its own, no overseer
+#   overseen     an overseer coordinates the ushabti; needs adminToken
+mode: solo
+
+nameOverride: ""
+fullnameOverride: ""
+
+imagePullSecrets: []
+
+# The admin token guards summons, halt, resume, and registration. Give the name
+# of an existing Secret: the chart never holds the token itself.
+#
+#   kubectl create secret generic ushabti-admin \
+#     --from-literal=admin-token="$(openssl rand -hex 32)"
+#
+# Required in overseen mode. Without it, in the other modes, an ushabti only
+# acts on its own vigil and cannot be halted over HTTP.
+adminToken:
+  existingSecret: ""
+  key: admin-token
+
+# The ushabti to deploy. Each one runs one spell from `spells` below.
+# solo mode takes exactly one entry.
+ushabti:
+  - name: k3s-watcher
+    spell: k3s-watcher
+
+agent:
+  image:
+    # OWNER is a placeholder for the GitHub user or organisation. Replace it,
+    # in lowercase, before installing: image names must be lowercase.
+    repository: ghcr.io/OWNER/ushabti-agent
+    # Defaults to the chart's appVersion.
+    tag: ""
+    pullPolicy: IfNotPresent
+
+  # Use this model provider instead of the one each spell names.
+  # One of: "", fake, anthropic, openai_compatible.
+  model: ""
+
+  # Plain environment variables for every ushabti, such as the model name.
+  env: []
+  #  - name: USHABTI_MODEL
+  #    value: <the model your provider serves>
+
+  # Environment variables read from existing Secrets, such as model API keys.
+  # These are references only. The chart never holds a secret value.
+  secretEnv: []
+  #  - name: ANTHROPIC_API_KEY
+  #    secretName: ushabti-model
+  #    secretKey: anthropic-api-key
+
+  port: 8080
+
+  serviceAccount:
+    create: true
+    # Defaults to the release's full name.
+    name: ""
+    annotations: {}
+
+  rbac:
+    create: true
+    # false: the ClusterRole only allows get, list, and watch.
+    # true:  it also allows patch and update on deployments and their scale,
+    #        which is what restarting and scaling a deployment need.
+    allowWrite: false
+
+  # Papyrus (the append-only audit log) also holds the halt state and the
+  # hourly action count. With persistence off, a rescheduled pod forgets a halt.
+  persistence:
+    enabled: true
+    size: 1Gi
+    # "" uses the cluster's default StorageClass.
+    storageClass: ""
+    accessModes:
+      - ReadWriteOnce
+
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      memory: 512Mi
+
+  podAnnotations: {}
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+# Only deployed when mode is overseen.
+overseer:
+  image:
+    # OWNER is a placeholder. Replace it, in lowercase, before installing.
+    repository: ghcr.io/OWNER/ushabti-overseer
+    # Defaults to the chart's appVersion.
+    tag: ""
+    pullPolicy: IfNotPresent
+
+  port: 8081
+
+  # How many ushabti make a decade.
+  decadeSize: 10
+  # Seconds between the "Here am I" messages each ushabti sends.
+  hereAmIInterval: 30
+  # How many of those may be missed before an ushabti is marked lost.
+  missedLimit: 3
+
+  resources:
+    requests:
+      cpu: 25m
+      memory: 96Mi
+    limits:
+      memory: 256Mi
+
+  podAnnotations: {}
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+networkPolicy:
+  enabled: true
+  # Extra peers allowed to reach the ushabti and overseer ports, for example a
+  # Prometheus that scrapes /metrics. Each entry is a NetworkPolicy peer.
+  ingressFrom: []
+  #  - namespaceSelector:
+  #      matchLabels:
+  #        kubernetes.io/metadata.name: monitoring
+
+# The spells, by name. Each becomes a file in one ConfigMap.
+# Keep dry_run: true until you have read docs/safety.md.
+spells:
+  k3s-watcher:
+    apiVersion: ushabti/v1alpha1
+    kind: Spell
+    metadata:
+      name: k3s-watcher
+    spec:
+      role: Keep the homelab K3s cluster healthy.
+      instructions: |
+        Watch deployments in the listed namespaces. When a deployment has fewer
+        ready replicas than desired for longer than five minutes, propose a restart.
+      model:
+        provider: anthropic
+        # Never hard-code a model ID. Set USHABTI_MODEL through agent.env.
+        name: ${USHABTI_MODEL}
+        # An environment reference only. Supply it through agent.secretEnv.
+        api_key: ${ANTHROPIC_API_KEY}
+      fields:
+        - name: homelab-k3s
+          kind: kubernetes
+          namespaces: [default, monitoring]
+      implements:
+        - kubernetes.list_pods
+        - kubernetes.get_deployment
+        - kubernetes.restart_deployment
+      maat:
+        - id: deployments-ready
+          description: Every deployment has ready replicas equal to desired replicas.
+      weighing:
+        dry_run: true
+        require_approval_for: [write]
+        max_actions_per_hour: 5
+      vigil:
+        interval: 60s
+      papyrus:
+        path: /var/lib/ushabti/papyrus.jsonl

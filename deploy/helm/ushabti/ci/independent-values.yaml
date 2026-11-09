@@ -1,0 +1,9 @@
+# Test values: independent mode, two ushabti, no overseer.
+mode: independent
+ushabti:
+  - name: k3s-watcher-a
+    spell: k3s-watcher
+  - name: k3s-watcher-b
+    spell: k3s-watcher
+agent:
+  model: fake

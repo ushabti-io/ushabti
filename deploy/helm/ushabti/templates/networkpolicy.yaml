@@ -1,0 +1,66 @@
+{{- if .Values.networkPolicy.enabled }}
+{{- $overseen := eq .Values.mode "overseen" }}
+# Who may reach the ushabti. By default nobody inside the cluster can, apart
+# from the overseer in overseen mode. Egress is left open: an ushabti must
+# reach the Kubernetes API, its model, and the systems it tends.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "ushabti.fullname" . }}-ushabti
+  labels:
+    {{- include "ushabti.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "ushabti.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: ushabti
+  policyTypes:
+    - Ingress
+  {{- if or $overseen .Values.networkPolicy.ingressFrom }}
+  ingress:
+    - from:
+        {{- if $overseen }}
+        - podSelector:
+            matchLabels:
+              {{- include "ushabti.selectorLabels" . | nindent 14 }}
+              app.kubernetes.io/component: overseer
+        {{- end }}
+        {{- with .Values.networkPolicy.ingressFrom }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      ports:
+        - port: http
+          protocol: TCP
+  {{- else }}
+  ingress: []
+  {{- end }}
+{{- if $overseen }}
+---
+# Who may reach the overseer: the ushabti it supervises, and any extra peers.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "ushabti.overseerName" . }}
+  labels:
+    {{- include "ushabti.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "ushabti.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: overseer
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              {{- include "ushabti.selectorLabels" . | nindent 14 }}
+              app.kubernetes.io/component: ushabti
+        {{- with .Values.networkPolicy.ingressFrom }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      ports:
+        - port: http
+          protocol: TCP
+{{- end }}
+{{- end }}

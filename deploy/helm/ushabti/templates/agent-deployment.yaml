@@ -1,0 +1,147 @@
+{{- $root := . }}
+{{- $fullname := include "ushabti.fullname" . }}
+{{- range .Values.ushabti }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $fullname }}-{{ .name }}
+  labels:
+    {{- include "ushabti.labels" $root | nindent 4 }}
+    app.kubernetes.io/component: ushabti
+    ushabti-name: {{ .name }}
+spec:
+  # One ushabti is one agent instance. Two replicas would both act.
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      {{- include "ushabti.selectorLabels" $root | nindent 6 }}
+      app.kubernetes.io/component: ushabti
+      ushabti-name: {{ .name }}
+  template:
+    metadata:
+      annotations:
+        # Restart the ushabti when its spell changes.
+        checksum/spell: {{ toYaml (index $root.Values.spells .spell) | sha256sum }}
+        {{- with $root.Values.agent.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      labels:
+        {{- include "ushabti.selectorLabels" $root | nindent 8 }}
+        app.kubernetes.io/component: ushabti
+        ushabti-name: {{ .name }}
+    spec:
+      serviceAccountName: {{ include "ushabti.serviceAccountName" $root }}
+      {{- with $root.Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: ushabti
+          image: "{{ $root.Values.agent.image.repository }}:{{ $root.Values.agent.image.tag | default $root.Chart.AppVersion }}"
+          imagePullPolicy: {{ $root.Values.agent.image.pullPolicy }}
+          args:
+            - run
+            - --spell
+            - /etc/ushabti/spell.yaml
+            {{- with $root.Values.agent.model }}
+            - --model
+            - {{ . }}
+            {{- end }}
+          env:
+            - name: USHABTI_NAME
+              value: {{ .name | quote }}
+            - name: USHABTI_MODE
+              value: {{ $root.Values.mode | quote }}
+            - name: USHABTI_PORT
+              value: {{ $root.Values.agent.port | quote }}
+            {{- if eq $root.Values.mode "overseen" }}
+            - name: USHABTI_OVERSEER_URL
+              value: "http://{{ include "ushabti.overseerName" $root }}:{{ $root.Values.overseer.port }}"
+            - name: USHABTI_ADVERTISE_URL
+              value: "http://{{ $fullname }}-{{ .name }}:{{ $root.Values.agent.port }}"
+            - name: USHABTI_HERE_AM_I_INTERVAL
+              value: {{ $root.Values.overseer.hereAmIInterval | quote }}
+            {{- end }}
+            {{- include "ushabti.adminTokenEnv" $root | nindent 12 }}
+            {{- range $root.Values.agent.secretEnv }}
+            - name: {{ .name }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .secretName | quote }}
+                  key: {{ .secretKey | quote }}
+            {{- end }}
+            {{- with $root.Values.agent.env }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          ports:
+            - name: http
+              containerPort: {{ $root.Values.agent.port }}
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 20
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            periodSeconds: 10
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          {{- with $root.Values.agent.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          volumeMounts:
+            - name: spell
+              mountPath: /etc/ushabti
+              readOnly: true
+            - name: papyrus
+              mountPath: /var/lib/ushabti
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: spell
+          configMap:
+            name: {{ $fullname }}-spells
+            items:
+              - key: {{ .spell }}.yaml
+                path: spell.yaml
+        - name: papyrus
+          {{- if $root.Values.agent.persistence.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ $fullname }}-{{ .name }}-papyrus
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
+        - name: tmp
+          emptyDir: {}
+      {{- with $root.Values.agent.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with $root.Values.agent.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with $root.Values.agent.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

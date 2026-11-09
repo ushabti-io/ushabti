@@ -1,0 +1,11 @@
+# An allowlist: nothing enters the build context unless it is named here.
+# That keeps .env files, Papyrus output, and local state out of every image.
+*
+
+!pyproject.toml
+!uv.lock
+!packages/
+
+packages/*/tests/
+**/__pycache__/
+**/*.pyc

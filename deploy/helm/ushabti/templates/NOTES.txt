@@ -1,0 +1,29 @@
+Ushabti is installed in {{ .Values.mode }} mode with {{ len .Values.ushabti }} ushabti.
+
+{{- if contains "OWNER" .Values.agent.image.repository }}
+
+WARNING: agent.image.repository still holds the OWNER placeholder, so the pods
+cannot pull their image. Set it to your registry path, in lowercase.
+{{- end }}
+
+Check on them:
+
+  kubectl get pods -n {{ .Release.Namespace }} -l app.kubernetes.io/instance={{ .Release.Name }}
+{{- range .Values.ushabti }}
+  kubectl port-forward -n {{ $.Release.Namespace }} svc/{{ include "ushabti.fullname" $ }}-{{ .name }} {{ $.Values.agent.port }}:{{ $.Values.agent.port }}
+{{- end }}
+  curl http://127.0.0.1:{{ .Values.agent.port }}/healthz
+
+Safety:
+
+  - Every spell ships with dry_run: true. An ushabti records what it would do
+    in Papyrus (its audit log) and changes nothing.
+  - RBAC is {{ if .Values.agent.rbac.allowWrite }}READ-WRITE: agent.rbac.allowWrite is true{{ else }}read-only: agent.rbac.allowWrite is false{{ end }}.
+{{- if .Values.adminToken.existingSecret }}
+  - Summons, halt, and resume need the token in the Secret {{ .Values.adminToken.existingSecret }}.
+{{- else }}
+  - No admin token is set, so summons, halt, and resume are disabled. Each
+    ushabti acts only on its own vigil.
+{{- end }}
+
+Read docs/safety.md before you loosen any of these.

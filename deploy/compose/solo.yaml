@@ -1,0 +1,46 @@
+# Solo mode: one ushabti (one agent instance) running one spell, with no overseer.
+#
+#   docker compose -f deploy/compose/solo.yaml up --build
+#
+# It runs examples/spells/k3s-watcher.yaml with the fake model, so it needs no
+# API key and reaches no cluster. The spell has dry_run: true, so nothing is
+# ever changed: the ushabti records what it would do.
+#
+# The image is built locally and tagged ushabti-agent:dev. To run a published
+# image instead, set USHABTI_AGENT_IMAGE, for example to
+# ghcr.io/<owner>/ushabti-agent. (The OWNER placeholder used elsewhere in this
+# repository is not a valid image name here: image names must be lowercase.)
+
+name: ushabti-solo
+
+services:
+  agent:
+    image: ${USHABTI_AGENT_IMAGE:-ushabti-agent}:${USHABTI_TAG:-dev}
+    build:
+      context: ../..
+      dockerfile: deploy/docker/agent.Dockerfile
+    command: ["run", "--spell", "/etc/ushabti/spell.yaml", "--model", "fake"]
+    environment:
+      USHABTI_MODE: solo
+      USHABTI_FAKE_SCRIPT: /etc/ushabti/fake-script.yaml
+      # Optional. Summons, halt, and resume are disabled unless a token is set.
+      # It is read from your shell and never written to a file.
+      USHABTI_ADMIN_TOKEN: ${USHABTI_ADMIN_TOKEN:-}
+    volumes:
+      - ../../examples/spells/k3s-watcher.yaml:/etc/ushabti/spell.yaml:ro
+      - ../../examples/fake-script.yaml:/etc/ushabti/fake-script.yaml:ro
+      - papyrus:/var/lib/ushabti
+    ports:
+      - "127.0.0.1:${USHABTI_HOST_PORT:-8080}:8080"
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    restart: unless-stopped
+
+volumes:
+  # Papyrus, the append-only audit log. It also holds the halt state, so keep it.
+  papyrus:

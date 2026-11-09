@@ -1,0 +1,99 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Values for the ushabti chart",
+  "type": "object",
+  "required": ["mode", "ushabti", "spells", "agent", "overseer", "adminToken", "networkPolicy"],
+  "properties": {
+    "mode": {
+      "description": "Topology: solo, independent, or overseen.",
+      "type": "string",
+      "enum": ["solo", "independent", "overseen"]
+    },
+    "adminToken": {
+      "type": "object",
+      "required": ["existingSecret", "key"],
+      "additionalProperties": false,
+      "properties": {
+        "existingSecret": {"type": "string"},
+        "key": {"type": "string", "minLength": 1}
+      }
+    },
+    "ushabti": {
+      "description": "The ushabti to deploy. Each runs one spell.",
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["name", "spell"],
+        "additionalProperties": false,
+        "properties": {
+          "name": {"type": "string", "pattern": "^[a-z0-9]([a-z0-9-]*[a-z0-9])?$", "maxLength": 40},
+          "spell": {"type": "string", "minLength": 1}
+        }
+      }
+    },
+    "spells": {
+      "description": "Spells by name.",
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {"type": "object"}
+    },
+    "agent": {
+      "type": "object",
+      "required": ["image", "rbac", "persistence", "port"],
+      "properties": {
+        "model": {"type": "string", "enum": ["", "fake", "anthropic", "openai_compatible"]},
+        "port": {"type": "integer", "minimum": 1, "maximum": 65535},
+        "rbac": {
+          "type": "object",
+          "required": ["create", "allowWrite"],
+          "additionalProperties": false,
+          "properties": {
+            "create": {"type": "boolean"},
+            "allowWrite": {"type": "boolean"}
+          }
+        },
+        "secretEnv": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name", "secretName", "secretKey"],
+            "additionalProperties": false,
+            "properties": {
+              "name": {"type": "string", "minLength": 1},
+              "secretName": {"type": "string", "minLength": 1},
+              "secretKey": {"type": "string", "minLength": 1}
+            }
+          }
+        },
+        "persistence": {
+          "type": "object",
+          "required": ["enabled"],
+          "properties": {
+            "enabled": {"type": "boolean"},
+            "size": {"type": "string"},
+            "storageClass": {"type": "string"}
+          }
+        }
+      }
+    },
+    "overseer": {
+      "type": "object",
+      "required": ["image", "port", "decadeSize", "hereAmIInterval", "missedLimit"],
+      "properties": {
+        "port": {"type": "integer", "minimum": 1, "maximum": 65535},
+        "decadeSize": {"type": "integer", "minimum": 1},
+        "hereAmIInterval": {"type": "number", "exclusiveMinimum": 0},
+        "missedLimit": {"type": "integer", "minimum": 1}
+      }
+    },
+    "networkPolicy": {
+      "type": "object",
+      "required": ["enabled"],
+      "properties": {
+        "enabled": {"type": "boolean"},
+        "ingressFrom": {"type": "array", "items": {"type": "object"}}
+      }
+    }
+  }
+}

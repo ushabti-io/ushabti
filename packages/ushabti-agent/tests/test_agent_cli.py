@@ -215,6 +215,15 @@ def test_the_spell_path_is_used_when_it_is_writable(tmp_path: Path) -> None:
     assert cli.papyrus_path(spell, Settings()) == tmp_path / "deep" / "papyrus.jsonl"
 
 
+def test_papyrus_is_never_created_world_readable(tmp_path: Path) -> None:
+    path = tmp_path / "papyrus.jsonl"
+    result = runner.invoke(
+        cli.app, ["run", "--spell", str(spell_at(tmp_path)), "--model", "fake", "--once"]
+    )
+    assert result.exit_code == 0, result.output
+    assert path.stat().st_mode & 0o007 == 0, oct(path.stat().st_mode)
+
+
 def test_an_unwritable_spell_path_falls_back_to_the_user_state_directory(
     tmp_path: Path,
 ) -> None:

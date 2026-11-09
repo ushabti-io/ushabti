@@ -1,0 +1,117 @@
+{{- if eq .Values.mode "overseen" }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "ushabti.overseerName" . }}
+  labels:
+    {{- include "ushabti.labels" . | nindent 4 }}
+    app.kubernetes.io/component: overseer
+spec:
+  # The registry lives in memory, so there is exactly one overseer.
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      {{- include "ushabti.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: overseer
+  template:
+    metadata:
+      {{- with .Values.overseer.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "ushabti.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: overseer
+    spec:
+      # The overseer never talks to the Kubernetes API.
+      automountServiceAccountToken: false
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: overseer
+          image: "{{ .Values.overseer.image.repository }}:{{ .Values.overseer.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.overseer.image.pullPolicy }}
+          args:
+            - run
+          env:
+            - name: USHABTI_OVERSEER_PORT
+              value: {{ .Values.overseer.port | quote }}
+            - name: USHABTI_OVERSEER_DECADE_SIZE
+              value: {{ .Values.overseer.decadeSize | quote }}
+            - name: USHABTI_OVERSEER_HERE_AM_I_INTERVAL
+              value: {{ .Values.overseer.hereAmIInterval | quote }}
+            - name: USHABTI_OVERSEER_MISSED_LIMIT
+              value: {{ .Values.overseer.missedLimit | quote }}
+            {{- include "ushabti.adminTokenEnv" . | nindent 12 }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.overseer.port }}
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 20
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            periodSeconds: 10
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          {{- with .Values.overseer.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}
+      {{- with .Values.overseer.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.overseer.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.overseer.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "ushabti.overseerName" . }}
+  labels:
+    {{- include "ushabti.labels" . | nindent 4 }}
+    app.kubernetes.io/component: overseer
+spec:
+  type: ClusterIP
+  selector:
+    {{- include "ushabti.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: overseer
+  ports:
+    - name: http
+      port: {{ .Values.overseer.port }}
+      targetPort: http
+      protocol: TCP
+{{- end }}

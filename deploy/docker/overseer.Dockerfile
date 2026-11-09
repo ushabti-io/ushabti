@@ -1,0 +1,78 @@
+# syntax=docker/dockerfile:1
+
+# Image for the overseer, the optional orchestrator of a workforce of ushabti.
+#
+# Build from the repository root:
+#   docker build -f deploy/docker/overseer.Dockerfile -t ushabti-overseer:dev .
+#
+# IMAGE is the name the image is published under. OWNER is a placeholder for
+# the GitHub user or organisation. See the README.
+
+ARG PYTHON_VERSION=3.14
+ARG UV_VERSION=0.13.5
+
+FROM ghcr.io/astral-sh/uv:${UV_VERSION} AS uv
+
+# Build stage: resolve and install into a virtual environment with uv.
+FROM python:${PYTHON_VERSION}-slim AS build
+
+COPY --from=uv /uv /bin/uv
+
+ENV UV_COMPILE_BYTECODE=1 \
+    UV_LINK_MODE=copy \
+    UV_PYTHON_DOWNLOADS=0 \
+    UV_PROJECT_ENVIRONMENT=/app/.venv
+
+WORKDIR /src
+
+# Dependencies first, from the lock file alone, so this layer is rebuilt only
+# when the lock changes.
+RUN --mount=type=cache,target=/root/.cache/uv \
+    --mount=type=bind,source=uv.lock,target=uv.lock \
+    --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
+    --mount=type=bind,source=packages/ushabti/pyproject.toml,target=packages/ushabti/pyproject.toml \
+    --mount=type=bind,source=packages/ushabti-agent/pyproject.toml,target=packages/ushabti-agent/pyproject.toml \
+    --mount=type=bind,source=packages/ushabti-overseer/pyproject.toml,target=packages/ushabti-overseer/pyproject.toml \
+    uv sync --locked --no-dev --no-install-workspace --package ushabti-overseer
+
+# Then the workspace packages themselves, as real installs and not editable
+# links, so the runtime stage needs nothing but the virtual environment.
+COPY pyproject.toml uv.lock ./
+COPY packages ./packages
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv sync --locked --no-dev --no-editable --package ushabti-overseer
+
+# Runtime stage: the slim image, the virtual environment, and a non-root user.
+FROM python:${PYTHON_VERSION}-slim AS runtime
+
+ARG IMAGE=ghcr.io/OWNER/ushabti-overseer
+
+LABEL org.opencontainers.image.title="ushabti-overseer" \
+      org.opencontainers.image.description="The overseer: registers ushabti, routes summonses, and tracks their health." \
+      org.opencontainers.image.licenses="Apache-2.0" \
+      org.opencontainers.image.source="https://github.com/OWNER/ushabti" \
+      org.opencontainers.image.ref.name="${IMAGE}"
+
+# The overseer keeps its registry in memory and writes nothing to disk, so the
+# container runs with a read-only root filesystem.
+RUN groupadd --system --gid 10001 ushabti \
+    && useradd --system --uid 10001 --gid 10001 --home-dir /nonexistent --no-create-home ushabti
+
+COPY --from=build /app/.venv /app/.venv
+
+ENV PATH="/app/.venv/bin:${PATH}" \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    USHABTI_OVERSEER_HOST=0.0.0.0 \
+    USHABTI_OVERSEER_PORT=8081 \
+    USHABTI_LOG_FORMAT=json
+
+USER 10001:10001
+WORKDIR /
+EXPOSE 8081
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
+    CMD ["python", "-c", "import os, sys, urllib.request; port = os.environ.get('USHABTI_OVERSEER_PORT', '8081'); sys.exit(0 if urllib.request.urlopen(f'http://127.0.0.1:{port}/healthz', timeout=3).status == 200 else 1)"]
+
+ENTRYPOINT ["ushabti-overseer"]
+CMD ["run"]

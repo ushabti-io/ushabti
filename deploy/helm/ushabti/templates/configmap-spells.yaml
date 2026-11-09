@@ -1,0 +1,12 @@
+{{- include "ushabti.validate" . }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "ushabti.fullname" . }}-spells
+  labels:
+    {{- include "ushabti.labels" . | nindent 4 }}
+data:
+  {{- range $name, $spell := .Values.spells }}
+  {{ $name }}.yaml: |
+    {{- toYaml $spell | nindent 4 }}
+  {{- end }}

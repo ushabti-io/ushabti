@@ -1,0 +1,92 @@
+# Overseen mode: one overseer coordinating two ushabti.
+#
+#   export USHABTI_ADMIN_TOKEN="$(openssl rand -hex 32)"
+#   docker compose -f deploy/compose/overseen.yaml up --build
+#
+# The token is required. The overseer and every ushabti share it: an ushabti
+# presents it to register, and the overseer presents it to route a summons or
+# fan out a halt. It is read from your shell and never written to a file.
+#
+# Both ushabti use the fake model and have dry_run: true in their spells, so
+# this needs no API key, reaches no cluster, and changes nothing.
+#
+# The images are built locally and tagged ushabti-agent:dev and
+# ushabti-overseer:dev. To run published images instead, set
+# USHABTI_AGENT_IMAGE and USHABTI_OVERSEER_IMAGE, for example to
+# ghcr.io/<owner>/ushabti-agent. (The OWNER placeholder used elsewhere in this
+# repository is not a valid image name here: image names must be lowercase.)
+
+name: ushabti-overseen
+
+x-ushabti: &ushabti
+  image: ${USHABTI_AGENT_IMAGE:-ushabti-agent}:${USHABTI_TAG:-dev}
+  build:
+    context: ../..
+    dockerfile: deploy/docker/agent.Dockerfile
+  command: ["run", "--spell", "/etc/ushabti/spell.yaml", "--model", "fake"]
+  depends_on:
+    overseer:
+      condition: service_healthy
+  read_only: true
+  tmpfs:
+    - /tmp
+  cap_drop:
+    - ALL
+  security_opt:
+    - no-new-privileges:true
+  restart: unless-stopped
+
+x-ushabti-environment: &ushabti-environment
+  USHABTI_MODE: overseen
+  USHABTI_OVERSEER_URL: http://overseer:8081
+  USHABTI_ADMIN_TOKEN: ${USHABTI_ADMIN_TOKEN:?set USHABTI_ADMIN_TOKEN, for example with openssl rand -hex 32}
+  USHABTI_HERE_AM_I_INTERVAL: "10"
+
+services:
+  overseer:
+    image: ${USHABTI_OVERSEER_IMAGE:-ushabti-overseer}:${USHABTI_TAG:-dev}
+    build:
+      context: ../..
+      dockerfile: deploy/docker/overseer.Dockerfile
+    environment:
+      USHABTI_ADMIN_TOKEN: ${USHABTI_ADMIN_TOKEN:?set USHABTI_ADMIN_TOKEN, for example with openssl rand -hex 32}
+      USHABTI_OVERSEER_HERE_AM_I_INTERVAL: "10"
+    ports:
+      - "127.0.0.1:${USHABTI_OVERSEER_HOST_PORT:-8081}:8081"
+    healthcheck:
+      interval: 5s
+      start_period: 5s
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    restart: unless-stopped
+
+  k3s-watcher:
+    <<: *ushabti
+    environment:
+      <<: *ushabti-environment
+      USHABTI_ADVERTISE_URL: http://k3s-watcher:8080
+      USHABTI_FAKE_SCRIPT: /etc/ushabti/fake-script.yaml
+    volumes:
+      - ../../examples/spells/k3s-watcher.yaml:/etc/ushabti/spell.yaml:ro
+      - ../../examples/fake-script.yaml:/etc/ushabti/fake-script.yaml:ro
+      - k3s-watcher-papyrus:/var/lib/ushabti
+
+  proxmox-watcher:
+    <<: *ushabti
+    environment:
+      <<: *ushabti-environment
+      USHABTI_ADVERTISE_URL: http://proxmox-watcher:8080
+    volumes:
+      - ../../examples/spells/proxmox-watcher.yaml:/etc/ushabti/spell.yaml:ro
+      - proxmox-watcher-papyrus:/var/lib/ushabti
+
+volumes:
+  # Papyrus, the append-only audit log of each ushabti. It also holds the halt
+  # state, so keep it.
+  k3s-watcher-papyrus:
+  proxmox-watcher-papyrus:

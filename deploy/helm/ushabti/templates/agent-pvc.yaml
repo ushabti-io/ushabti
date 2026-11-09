@@ -1,0 +1,28 @@
+{{- if .Values.agent.persistence.enabled }}
+{{- $root := . }}
+{{- $fullname := include "ushabti.fullname" . }}
+{{- range .Values.ushabti }}
+---
+# Papyrus: the append-only audit log, which also holds the halt state.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ $fullname }}-{{ .name }}-papyrus
+  labels:
+    {{- include "ushabti.labels" $root | nindent 4 }}
+    app.kubernetes.io/component: ushabti
+    ushabti-name: {{ .name }}
+  annotations:
+    # Uninstalling the chart must not delete the audit log.
+    helm.sh/resource-policy: keep
+spec:
+  accessModes:
+    {{- toYaml $root.Values.agent.persistence.accessModes | nindent 4 }}
+  {{- with $root.Values.agent.persistence.storageClass }}
+  storageClassName: {{ . | quote }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ $root.Values.agent.persistence.size | quote }}
+{{- end }}
+{{- end }}

@@ -80,8 +80,9 @@ def state_directory() -> Path:
 def _can_append(path: Path) -> bool:
     try:
         path.parent.mkdir(parents=True, exist_ok=True)
-        with path.open("a", encoding="utf-8"):
-            pass
+        # Same flags and mode as JsonlPapyrus, so a file created by this probe
+        # is not left world-readable.
+        os.close(os.open(path, os.O_WRONLY | os.O_APPEND | os.O_CREAT, 0o640))
     except OSError:
         return False
     return True

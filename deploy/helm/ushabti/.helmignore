@@ -1,0 +1,13 @@
+# Patterns to leave out of the packaged chart.
+.DS_Store
+.git/
+.gitignore
+*.swp
+*.bak
+*.tmp
+*.orig
+*~
+.idea/
+.vscode/
+# Values used only to test the chart.
+ci/

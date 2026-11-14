@@ -1,6 +1,6 @@
 [project]
 name = "ushabti-agent"
-version = "0.1.0.dev0"
+version = "0.1.0.dev1"
 description = "Agent runtime for Ushabti: one ushabti running one spell, with its vigil loop, CLI, and HTTP API."
 readme = "README.md"
 requires-python = ">=3.12"
@@ -23,7 +23,7 @@ dependencies = [
     "httpx>=0.28.1",
     "prometheus-client>=0.26.0",
     "typer>=0.28.0",
-    "ushabti>=0.1.0.dev0",
+    "ushabti>=0.1.0.dev1",
     "uvicorn>=0.54.0",
 ]
 

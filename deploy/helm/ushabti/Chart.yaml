@@ -5,7 +5,7 @@ description: >-
   (agents) and, in overseen mode, the overseer that coordinates them.
 type: application
 version: 0.1.0
-appVersion: "0.1.0.dev0"
+appVersion: "0.1.0.dev1"
 keywords:
   - devops
   - sre

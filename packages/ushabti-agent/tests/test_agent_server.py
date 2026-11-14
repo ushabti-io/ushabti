@@ -8,7 +8,16 @@ import pytest
 from fastapi.testclient import TestClient
 
 from agent_testkit import LOOSE, World, make_spell, proposing, write_call
-from ushabti import HereAmI, Mode, Settings, Summons, SummonsState
+from ushabti import (
+    HereAmI,
+    Mode,
+    PapyrusEntry,
+    PapyrusEvent,
+    Settings,
+    Summons,
+    SummonsState,
+    select_entries,
+)
 from ushabti.models.fake import FakeProvider
 from ushabti_agent.server import create_app
 
@@ -146,6 +155,97 @@ def test_an_escalated_summons_is_visible_through_the_api(tmp_path: Path) -> None
     assert body["detail"] == "verdicts: 1 NEEDS_APPROVAL"
 
 
+# Reading Papyrus and the summonses
+
+
+def ndjson(text: str) -> list[PapyrusEntry]:
+    return [PapyrusEntry.model_validate_json(line) for line in text.splitlines()]
+
+
+async def acted_world(tmp_path: Path) -> World:
+    """A world after one tick that found drift, summoned the model, and weighed a write."""
+    provider = FakeProvider([proposing(write_call())])
+    world = World(tmp_path, provider=provider, spell=make_spell(weighing=LOOSE))
+    await world.ushabti.once()
+    return world
+
+
+async def test_papyrus_is_readable_as_ndjson_oldest_first(tmp_path: Path) -> None:
+    world = await acted_world(tmp_path)
+    with client_for(world) as client:
+        response = client.get("/papyrus")
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("application/x-ndjson")
+    entries = ndjson(response.text)
+    assert entries == world.entries()
+    assert {entry.event for entry in entries} >= {
+        PapyrusEvent.OBSERVATION,
+        PapyrusEvent.ISFET,
+        PapyrusEvent.SUMMONS,
+        PapyrusEvent.PROPOSAL,
+        PapyrusEvent.VERDICT,
+        PapyrusEvent.VIGIL_TICK,
+    }
+
+
+async def test_papyrus_filters_narrow_the_result(tmp_path: Path) -> None:
+    world = await acted_world(tmp_path)
+    summons_id = world.ushabti.summonses()[0].id
+    assertion = str(world.of("isfet")[0].payload["assertion"])
+    with client_for(world) as client:
+        kinds = ndjson(client.get("/papyrus", params={"event": ["verdict", "proposal"]}).text)
+        thread = ndjson(client.get("/papyrus", params={"summons": summons_id}).text)
+        about = ndjson(client.get("/papyrus", params={"assertion": assertion}).text)
+        later = client.get("/papyrus", params={"since": "2099-01-01T00:00:00Z"}).text
+        newest = ndjson(client.get("/papyrus", params={"limit": 1}).text)
+
+    assert kinds == [
+        entry
+        for entry in world.entries()
+        if entry.event in (PapyrusEvent.PROPOSAL, PapyrusEvent.VERDICT)
+    ]
+    assert {entry.event.value for entry in kinds} == {"proposal", "verdict"}
+    assert thread == select_entries(world.entries(), summons=summons_id)
+    assert {entry.event.value for entry in thread} >= {"summons", "proposal", "verdict"}
+    assert all(
+        entry.payload.get("summons", entry.payload.get("id")) == summons_id for entry in thread
+    )
+    assert {entry.event.value for entry in about} == {"observation", "isfet"}
+    assert later == ""
+    assert newest == world.entries()[-1:]
+
+
+def test_papyrus_is_empty_before_anything_happened(client: TestClient) -> None:
+    response = client.get("/papyrus")
+    assert response.status_code == 200
+    assert response.text == ""
+
+
+@pytest.mark.parametrize(
+    "params", [{"limit": 0}, {"limit": 5001}, {"event": "nope"}, {"since": "yesterday"}]
+)
+def test_papyrus_rejects_a_bad_query(client: TestClient, params: dict[str, str | int]) -> None:
+    assert client.get("/papyrus", params=params).status_code == 422
+
+
+def test_summonses_are_listed_newest_first(client: TestClient) -> None:
+    older = {"source": "operator", "reason": "First.", "created_at": "2026-01-02T03:04:05Z"}
+    newer = {"source": "operator", "reason": "Second.", "created_at": "2026-01-02T03:05:05Z"}
+    first = client.post("/summons", json=older).json()["id"]
+    second = client.post("/summons", json=newer).json()["id"]
+
+    listed = client.get("/summons").json()
+    assert [item["id"] for item in listed] == [second, first]
+    assert [item["reason"] for item in listed] == ["Second.", "First."]
+
+    assert [item["id"] for item in client.get("/summons", params={"limit": 1}).json()] == [second]
+    assert client.get("/summons", params={"limit": 0}).status_code == 422
+
+
+def test_an_idle_ushabti_lists_no_summonses(client: TestClient) -> None:
+    assert client.get("/summons").json() == []
+
+
 # Halt and resume
 
 
@@ -154,6 +254,8 @@ GUARDED = [
     ("POST", "/resume"),
     ("POST", "/summons"),
     ("GET", "/summons/some-id"),
+    ("GET", "/summons"),
+    ("GET", "/papyrus"),
 ]
 
 

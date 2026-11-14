@@ -4,16 +4,25 @@ import asyncio
 import secrets
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
-from typing import Annotated
+from datetime import datetime
+from typing import Annotated, Final
 
-from fastapi import Depends, FastAPI, Header, HTTPException, Response, status
+from fastapi import Depends, FastAPI, Header, HTTPException, Query, Response, status
 from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 from pydantic import BaseModel
 
-from ushabti import HereAmI, Settings, Summons, SummonsSource
+from ushabti import HereAmI, PapyrusEvent, Settings, Summons, SummonsSource
 from ushabti_agent import __version__
 from ushabti_agent.overseer_client import OverseerClient
 from ushabti_agent.runtime import Ushabti
+
+READ_LIMIT: Final = 200
+"""How many entries or summonses a read returns when the caller sets no limit."""
+
+READ_LIMIT_MAX: Final = 5000
+"""The most a single read may return. Papyrus can be long; read it in pages."""
+
+NDJSON: Final = "application/x-ndjson"
 
 
 class SummonsAccepted(BaseModel):
@@ -115,6 +124,13 @@ def create_app(
             )
         return SummonsAccepted(id=ushabti.submit(summons).id)
 
+    @app.get("/summons", dependencies=[Depends(require_admin)])
+    async def list_summonses(
+        limit: Annotated[int, Query(ge=1, le=READ_LIMIT_MAX)] = READ_LIMIT,
+    ) -> list[Summons]:
+        """The summonses this ushabti remembers, newest first."""
+        return ushabti.summonses(limit=limit)
+
     @app.get("/summons/{summons_id}", dependencies=[Depends(require_admin)])
     async def read_summons(summons_id: str) -> Summons:
         """The current state of a summons, including whether it was escalated."""
@@ -122,6 +138,33 @@ def create_app(
         if summons is None:
             raise HTTPException(status.HTTP_404_NOT_FOUND, "no such summons")
         return summons
+
+    # Papyrus holds the model's proposals and every observation, so reading it
+    # is guarded like acting. A plain `def`: FastAPI runs it in a thread, so a
+    # long file does not stall the vigil.
+    @app.get("/papyrus", dependencies=[Depends(require_admin)])
+    def read_papyrus(
+        event: Annotated[list[PapyrusEvent] | None, Query()] = None,
+        since: Annotated[datetime | None, Query()] = None,
+        summons: Annotated[str | None, Query()] = None,
+        assertion: Annotated[str | None, Query()] = None,
+        limit: Annotated[int, Query(ge=1, le=READ_LIMIT_MAX)] = READ_LIMIT,
+    ) -> Response:
+        """Papyrus (the audit log) as NDJSON: one entry per line, oldest first.
+
+        Filters: `event` (repeatable), `since` (RFC 3339), `summons` and
+        `assertion` (ids in the payload). When more entries match than `limit`,
+        the newest are returned.
+        """
+        entries = ushabti.papyrus_entries(
+            events=tuple(event or ()),
+            since=since,
+            summons=summons,
+            assertion=assertion,
+            limit=limit,
+        )
+        body = "".join(entry.model_dump_json() + "\n" for entry in entries)
+        return Response(body, media_type=NDJSON)
 
     @app.post("/halt", dependencies=[Depends(require_admin)])
     async def halt() -> HaltState:

@@ -152,6 +152,8 @@ test pass. If a change touches one, say which and why.
 
 - Use Conventional Commits. Types: `feat`, `fix`, `docs`, `test`, `refactor`,
   `chore`, `ci`. Scopes: `sdk`, `agent`, `overseer`, `deploy`.
+- Changes reach `main` only through a pull request whose `All checks` status is
+  green. A ruleset enforces it; nothing pushes to `main` directly.
 - Never push a tag and never publish. A maintainer releases by pushing a `v*`
   tag. `release.yaml` then publishes the SDK to PyPI behind an approval and
   pushes both images.

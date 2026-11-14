@@ -155,3 +155,25 @@ jobs:
 
       - name: Check that the image starts
         run: docker run --rm ushabti-${{ matrix.image }}:ci version
+
+  all-checks:
+    # The one status the ruleset on main requires. It fails when any job above
+    # failed, was cancelled, or was skipped, so jobs can be added or renamed
+    # without touching the ruleset.
+    name: All checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: [checks, secrets, deployment-files, images]
+    if: always()
+    steps:
+      - name: Every job succeeded
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          echo "job results: ${RESULTS}"
+          for result in ${RESULTS}; do
+            if [ "${result}" != "success" ]; then
+              echo "::error::a job did not succeed (${result})"
+              exit 1
+            fi
+          done

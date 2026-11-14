@@ -208,7 +208,7 @@ weighing.
 | `proxmox.node_status` | `read` | Get the status of a Proxmox node: uptime, CPU, memory, storage. | scaffold stub, not implemented yet |
 | `proxmox.list_vms` | `read` | List the virtual machines on a Proxmox node with their state. | scaffold stub, not implemented yet |
 | `proxmox.start_vm` | `write` | Start a stopped virtual machine on a Proxmox node. | scaffold stub, not implemented yet |
-| `prometheus.query` | `read` | Evaluate a PromQL expression at a single point in time. | scaffold stub, not implemented yet |
-| `prometheus.query_range` | `read` | Evaluate a PromQL expression over a time range. | scaffold stub, not implemented yet |
+| `prometheus.query` | `read` | Evaluate a PromQL expression at a single point in time. Returns the samples with their labels, their count, and, when there is exactly one sample, its number at `value`. | ready |
+| `prometheus.query_range` | `read` | Evaluate a PromQL expression over a time range. Returns one series per label set, each with its values and its first, last, min, and max, and, when there is exactly one series, those four numbers at the top level. | ready |
 
 There is no shell implement.

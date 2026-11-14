@@ -56,7 +56,11 @@ def test_the_example_spells_pass_check_spell(example: Path) -> None:
 
 
 def test_there_are_example_spells_to_check() -> None:
-    assert [path.name for path in EXAMPLES] == ["k3s-watcher.yaml", "proxmox-watcher.yaml"]
+    assert [path.name for path in EXAMPLES] == [
+        "k3s-watcher.yaml",
+        "metrics-watcher.yaml",
+        "proxmox-watcher.yaml",
+    ]
 
 
 def test_check_spell_prints_the_resolved_configuration_with_secrets_masked(

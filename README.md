@@ -183,10 +183,14 @@ Papyrus, the vigil loop, summons handling, halt and resume, the overseer's
 registry, decades and routing, the fake model provider, and minimal Anthropic
 and OpenAI-compatible providers.
 
-What is a stub: the `kubernetes.*`, `proxmox.*`, and `prometheus.*` implements.
-Each is declared with its kind and its parameters, and raises
-`NotImplementedError`. Until they are built, an ushabti pointed at a real
-cluster can be summoned and will reason, but cannot observe or act.
+What works against a real system: the `prometheus.*` implements. An ushabti
+can keep its vigil over Prometheus metrics today, as
+[`examples/spells/metrics-watcher.yaml`](examples/spells/metrics-watcher.yaml)
+shows.
+
+What is a stub: the `kubernetes.*` and `proxmox.*` implements. Each is declared
+with its kind and its parameters, and raises `NotImplementedError`. Until they
+are built, an ushabti can observe through Prometheus and reason, but cannot act.
 
 The quick start builds the images locally, so it always runs the code you have
 checked out. Each release also pushes them to `ghcr.io/ushabti-io`, tagged with

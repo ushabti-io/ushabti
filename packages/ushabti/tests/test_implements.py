@@ -22,7 +22,7 @@ from ushabti import (
 from ushabti.implements import builtin_implements
 from ushabti.implements.noop import NoopRead, NoopWrite
 
-STUBS = {
+DECLARED = {
     "kubernetes.list_pods": ImplementKind.READ,
     "kubernetes.get_deployment": ImplementKind.READ,
     "kubernetes.restart_deployment": ImplementKind.WRITE,
@@ -33,6 +33,8 @@ STUBS = {
     "prometheus.query": ImplementKind.READ,
     "prometheus.query_range": ImplementKind.READ,
 }
+# The Prometheus implements are built. The rest are still scaffold stubs.
+STUBS = {name: kind for name, kind in DECLARED.items() if not name.startswith("prometheus.")}
 
 WRITES = [i for i in builtin_implements() if i.kind is ImplementKind.WRITE]
 READS = [i for i in builtin_implements() if i.kind is ImplementKind.READ]
@@ -117,10 +119,11 @@ async def test_the_field_reaches_the_implement() -> None:
 # The scaffold stubs
 
 
-def test_every_stub_operation_is_declared_with_its_kind() -> None:
+def test_every_declared_operation_has_its_kind() -> None:
     registry = default_registry()
-    assert {name: registry.get(name).kind for name in STUBS} == STUBS
-    assert set(registry.names()) == {*STUBS, "noop.read", "noop.write"}
+    assert {name: registry.get(name).kind for name in DECLARED} == DECLARED
+    assert set(registry.names()) == {*DECLARED, "noop.read", "noop.write"}
+    assert len(STUBS) == 7
 
 
 @pytest.mark.parametrize("name", sorted(STUBS))

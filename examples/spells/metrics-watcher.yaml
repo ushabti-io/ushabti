@@ -1,0 +1,57 @@
+apiVersion: ushabti/v1alpha1
+kind: Spell
+metadata:
+  name: metrics-watcher
+spec:
+  role: Watch the homelab through its Prometheus metrics and say what is wrong before it bites.
+  instructions: |
+    You have read implements only. Investigate with PromQL, explain what you
+    find in plain words, and say what an operator should do about it. Never
+    state a number you did not query.
+  model:
+    provider: anthropic            # anthropic | openai_compatible | fake
+    name: ${USHABTI_MODEL}         # never hard-code a model ID
+    api_key: ${ANTHROPIC_API_KEY}  # environment reference only
+  fields:
+    - name: homelab-metrics
+      kind: prometheus
+      endpoint: ${PROMETHEUS_URL}  # for example http://kube-prometheus-stack-prometheus.monitoring.svc:9090
+  implements:
+    - prometheus.query
+    - prometheus.query_range
+  # Each assertion below is machine-checked. The vigil runs `observe`, reads
+  # `path` out of the result (`value` is the single sample of an instant
+  # query), and compares. A failed `expect` raises isfet; a met `omen` raises
+  # an omen while `expect` still holds. These mirror common alert rules for a
+  # cluster with kube-state-metrics and node_exporter.
+  maat:
+    - id: deployments-have-their-replicas
+      description: Every deployment has as many available replicas as it asks for.
+      observe:
+        implement: prometheus.query
+        arguments:
+          # `or vector(0)` turns "no mismatches" into the number 0 instead of an empty result.
+          query: count(kube_deployment_spec_replicas != kube_deployment_status_replicas_available) or vector(0)
+      expect: {path: value, op: eq, value: 0}
+    - id: node-memory-has-headroom
+      description: Memory use on every node stays below 90 percent.
+      observe:
+        implement: prometheus.query
+        arguments:
+          query: max((1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes) * 100)
+      expect: {path: value, op: lt, value: 90}
+      omen: {path: value, op: ge, value: 80}
+    - id: root-disks-have-room
+      description: The root filesystem on every node stays below 85 percent full.
+      observe:
+        implement: prometheus.query
+        arguments:
+          query: max((1 - node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"}) * 100)
+      expect: {path: value, op: lt, value: 85}
+      omen: {path: value, op: ge, value: 75}
+  weighing:
+    dry_run: true
+  vigil:
+    interval: 5m
+  papyrus:
+    path: /var/lib/ushabti/papyrus.jsonl

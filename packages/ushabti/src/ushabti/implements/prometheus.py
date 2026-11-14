@@ -32,7 +32,7 @@ from pydantic import JsonValue
 
 from ushabti.errors import ImplementError, MissingExtraError, UnresolvedEnvError
 from ushabti.field import Field, FieldKind
-from ushabti.implements import Implement, ImplementKind
+from ushabti.implements import Implement, ImplementKind, optional_text_argument, text_argument
 from ushabti.spell import expand_env
 
 if TYPE_CHECKING:
@@ -82,16 +82,6 @@ class _PrometheusImplement(Implement):
             ) from error
         return _data(self.name, response)
 
-    def _text(self, arguments: Mapping[str, JsonValue], key: str, *, required: bool) -> str | None:
-        value = arguments.get(key)
-        if value is None:
-            if required:
-                raise ImplementError(f"{self.name}: the argument '{key}' is required")
-            return None
-        if isinstance(value, bool) or not isinstance(value, str | int | float):
-            raise ImplementError(f"{self.name}: the argument '{key}' must be a string")
-        return str(value)
-
 
 class Query(_PrometheusImplement):
     """An instant query: the value of an expression at one point in time."""
@@ -111,10 +101,9 @@ class Query(_PrometheusImplement):
     path: ClassVar[str] = "/api/v1/query"
 
     async def _run(self, arguments: Mapping[str, JsonValue], field: Field | None) -> JsonValue:
-        query = self._text(arguments, "query", required=True)
-        assert query is not None  # noqa: S101  (required, so _text raised otherwise)
+        query = text_argument(self.name, arguments, "query")
         params = {"query": query}
-        at = self._text(arguments, "time", required=False)
+        at = optional_text_argument(self.name, arguments, "time")
         if at is not None:
             params["time"] = at
         data = await self._call(field, params)
@@ -149,9 +138,7 @@ class QueryRange(_PrometheusImplement):
     async def _run(self, arguments: Mapping[str, JsonValue], field: Field | None) -> JsonValue:
         params: dict[str, str] = {}
         for key in ("query", "start", "end", "step"):
-            value = self._text(arguments, key, required=True)
-            assert value is not None  # noqa: S101  (required, so _text raised otherwise)
-            params[key] = value
+            params[key] = text_argument(self.name, arguments, key)
         data = await self._call(field, params)
         return _shape(self.name, params["query"], data)
 

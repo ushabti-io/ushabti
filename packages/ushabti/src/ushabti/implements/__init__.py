@@ -14,7 +14,7 @@ from typing import TYPE_CHECKING, ClassVar, Final, final
 from pydantic import JsonValue
 
 from ushabti._base import WireModel
-from ushabti.errors import UnknownImplementError, UnweighedWriteError
+from ushabti.errors import ImplementError, UnknownImplementError, UnweighedWriteError
 from ushabti.field import Field
 
 if TYPE_CHECKING:
@@ -165,6 +165,26 @@ class ImplementRegistry:
 
     def __len__(self) -> int:
         return len(self._implements)
+
+
+def text_argument(implement: str, arguments: Mapping[str, JsonValue], key: str) -> str:
+    """A required text argument. Numbers are accepted and written out; anything else is refused."""
+    value = optional_text_argument(implement, arguments, key)
+    if value is None:
+        raise ImplementError(f"{implement}: the argument '{key}' is required")
+    return value
+
+
+def optional_text_argument(
+    implement: str, arguments: Mapping[str, JsonValue], key: str
+) -> str | None:
+    """An optional text argument: None when absent, ImplementError when it is not text."""
+    value = arguments.get(key)
+    if value is None:
+        return None
+    if isinstance(value, bool) or not isinstance(value, str | int | float):
+        raise ImplementError(f"{implement}: the argument '{key}' must be a string")
+    return str(value)
 
 
 def builtin_implements() -> tuple[Implement, ...]:

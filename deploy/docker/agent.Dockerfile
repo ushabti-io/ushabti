@@ -20,7 +20,7 @@ COPY --from=uv /uv /bin/uv
 
 # Extras of ushabti-agent to install. The default covers both model providers
 # and the Prometheus implements. Add kubernetes or proxmox once those are built.
-ARG EXTRAS="anthropic openai prometheus"
+ARG EXTRAS="anthropic openai prometheus kubernetes"
 
 ENV UV_COMPILE_BYTECODE=1 \
     UV_LINK_MODE=copy \

@@ -60,6 +60,7 @@ def test_there_are_example_spells_to_check() -> None:
         "k3s-watcher.yaml",
         "metrics-watcher.yaml",
         "proxmox-watcher.yaml",
+        "workloads-watcher.yaml",
     ]
 
 

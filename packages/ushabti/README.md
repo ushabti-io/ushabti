@@ -14,6 +14,8 @@ It holds the vocabulary every other package shares:
 pip install ushabti                 # core only
 pip install "ushabti[anthropic]"    # with the Anthropic SDK
 pip install "ushabti[openai]"       # with the OpenAI SDK, for any OpenAI-compatible endpoint
+pip install "ushabti[kubernetes]"   # with the Kubernetes client, for the kubernetes.* implements
+pip install "ushabti[prometheus]"   # with httpx, for the prometheus.* implements
 ```
 
 This is the only Ushabti package on PyPI. The agent and the overseer ship as container images,

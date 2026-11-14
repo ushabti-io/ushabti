@@ -2086,7 +2086,7 @@ dev = [
     { name = "pytest-cov" },
     { name = "ruff" },
     { name = "types-pyyaml" },
-    { name = "ushabti", extra = ["anthropic", "openai"] },
+    { name = "ushabti", extra = ["anthropic", "kubernetes", "openai"] },
 ]
 
 [package.metadata]
@@ -2106,7 +2106,7 @@ dev = [
     { name = "pytest-cov", specifier = ">=7.1.0" },
     { name = "ruff", specifier = ">=0.17.4" },
     { name = "types-pyyaml", specifier = ">=6.0.12.20261103" },
-    { name = "ushabti", extras = ["anthropic", "openai"], editable = "packages/ushabti" },
+    { name = "ushabti", extras = ["anthropic", "kubernetes", "openai"], editable = "packages/ushabti" },
 ]
 
 [[package]]

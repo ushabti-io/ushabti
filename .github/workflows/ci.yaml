@@ -105,6 +105,7 @@ jobs:
           helm lint deploy/helm/ushabti --values deploy/helm/ushabti/ci/independent-values.yaml
           helm lint deploy/helm/ushabti --values deploy/helm/ushabti/ci/overseen-values.yaml
           helm lint deploy/helm/ushabti --values deploy/helm/ushabti/ci/allow-write-values.yaml
+          helm lint deploy/helm/ushabti --values deploy/helm/ushabti/ci/servicemonitor-values.yaml
 
       - name: Render the chart in every mode
         run: |
@@ -115,6 +116,8 @@ jobs:
             --values deploy/helm/ushabti/ci/overseen-values.yaml > /dev/null
           helm template ushabti deploy/helm/ushabti \
             --values deploy/helm/ushabti/ci/allow-write-values.yaml > /dev/null
+          helm template ushabti deploy/helm/ushabti \
+            --values deploy/helm/ushabti/ci/servicemonitor-values.yaml > /dev/null
 
       # The workflows read the uv version from one Dockerfile, so the two
       # must not drift apart.

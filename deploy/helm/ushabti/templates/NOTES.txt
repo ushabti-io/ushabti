@@ -7,6 +7,15 @@ Check on them:
   kubectl port-forward -n {{ $.Release.Namespace }} svc/{{ include "ushabti.fullname" $ }}-{{ .name }} {{ $.Values.agent.port }}:{{ $.Values.agent.port }}
 {{- end }}
   curl http://127.0.0.1:{{ .Values.agent.port }}/healthz
+{{- if .Values.metrics.serviceMonitor.enabled }}
+
+Metrics are scraped through ServiceMonitor {{ include "ushabti.fullname" . }} by the
+Prometheus in {{ .Values.metrics.serviceMonitor.prometheusNamespace }}.
+{{- else }}
+
+Metrics are at /metrics on the same port. Set metrics.serviceMonitor.enabled
+to let a Prometheus Operator scrape them.
+{{- end }}
 
 Safety:
 

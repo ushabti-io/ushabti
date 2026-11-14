@@ -1,0 +1,10 @@
+# Test values: scraped by a Prometheus Operator that runs in the monitoring
+# namespace and selects ServiceMonitors by a release label.
+metrics:
+  serviceMonitor:
+    enabled: true
+    labels:
+      release: kube-prometheus-stack
+    interval: 15s
+    scrapeTimeout: 5s
+    prometheusNamespace: monitoring

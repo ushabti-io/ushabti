@@ -6,7 +6,15 @@ has the steps. Entries name the pull request that made the change.
 
 ## Unreleased
 
-Nothing yet.
+- Two metrics: `ushabti_assertion_status{assertion, status}` is 1 for each
+  assertion's current Ma'at status, and `ushabti_last_vigil_timestamp_seconds`
+  is the time of the last tick, so "which assertion is out of balance" and
+  "how long since the vigil ran" are answered by Prometheus (#31).
+- Helm: `metrics.grafanaDashboard.enabled` ships the "Ushabti vigil" Grafana
+  dashboard as a ConfigMap for the kube-prometheus-stack sidecar: each
+  ushabti's scrape, halt, time since the last vigil, isfet and omens, the
+  status of every assertion, verdicts and actions per hour, and the log feed
+  from Loki (#31).
 
 ## 0.1.0.dev2 (2026-11-13)
 

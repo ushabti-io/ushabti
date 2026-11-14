@@ -8,3 +8,8 @@ metrics:
     interval: 15s
     scrapeTimeout: 5s
     prometheusNamespace: monitoring
+  # The dashboard goes where that Grafana's sidecar looks, in a folder.
+  grafanaDashboard:
+    enabled: true
+    namespace: monitoring
+    folder: Ushabti

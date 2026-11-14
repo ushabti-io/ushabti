@@ -189,7 +189,7 @@ One ushabti, on port 8080 by default:
 | Method and path | Behaviour |
 |---|---|
 | `GET /healthz` | Returns its "Here am I" body: name, spell, mode, halted flag, last vigil time. |
-| `GET /metrics` | Prometheus metrics: vigil ticks, isfet count, omen count, verdicts by type, actions run. |
+| `GET /metrics` | Prometheus metrics: vigil ticks, isfet count, omen count, verdicts by type, actions run, the halted flag, the time of the last tick, and the current Ma'at status of every assertion. |
 | `POST /summons` | Accepts a summons and returns `202` with its id. Needs the token. |
 | `GET /summons/{id}` | Returns the summons in its current state. Needs the token. |
 | `GET /summons` | Lists the summonses this ushabti remembers, newest first. `limit` defaults to 200. Needs the token. |

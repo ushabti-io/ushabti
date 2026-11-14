@@ -160,6 +160,22 @@ metrics:
     # The namespace the scraping Prometheus runs in. Its pods are allowed to
     # reach the ushabti http port while the ServiceMonitor is enabled.
     prometheusNamespace: monitoring
+  # The Grafana dashboard for the vigil (dashboards/ushabti-vigil.json), as a
+  # ConfigMap labelled for the kube-prometheus-stack Grafana sidecar. It needs
+  # the metrics to be scraped, so turn the ServiceMonitor on with it.
+  grafanaDashboard:
+    enabled: false
+    # Where to create the ConfigMap. The sidecar usually watches only Grafana's
+    # own namespace, so name that one, for example monitoring. "" means the
+    # release namespace.
+    namespace: ""
+    # The label the sidecar selects dashboards by.
+    label:
+      key: grafana_dashboard
+      value: "1"
+    # Optional Grafana folder, passed through the sidecar's folder annotation.
+    folder: ""
+    folderAnnotation: grafana_folder
 
 # The spells, by name. Each becomes a file in one ConfigMap.
 # Keep dry_run: true until you have read docs/safety.md.

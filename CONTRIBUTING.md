@@ -139,6 +139,23 @@ Scopes in use: `sdk`, `agent`, `overseer`, `deploy`, `scaffold`.
 Keep the subject in the imperative and under 72 characters. Use the body to say
 why the change was made.
 
+## Pull requests
+
+Changes reach `main` through a pull request. Rulesets on the repository enforce
+it, for maintainers too:
+
+- `main` cannot be pushed to directly, force-pushed, or deleted.
+- A pull request merges only when the `All checks` status is green. That is the
+  last job of `.github/workflows/ci.yaml`, and it succeeds only when every
+  other job did, so a CI job can be added or renamed without touching the
+  ruleset. Renaming `All checks` itself needs the ruleset changed too.
+- A `v*` tag can only be created, moved, or deleted by a repository admin,
+  because pushing one is a release.
+
+The rulesets live under Settings, Rules, Rulesets. They are not in this
+repository, so a change to CI that affects them has to say so in the pull
+request.
+
 ## Adding an implement
 
 Every implement is either `read` or `write`, and the difference matters: a

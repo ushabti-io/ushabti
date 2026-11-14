@@ -248,6 +248,10 @@ Only the SDK, `ushabti`, goes to PyPI. The agent and the overseer ship as
 container images on `ghcr.io/ushabti-io`, and their packages carry the
 `Private :: Do Not Upload` classifier so that PyPI would refuse them.
 
+Every user-visible change gets a line in [CHANGELOG.md](CHANGELOG.md) under
+Unreleased, naming its pull request. A release moves those lines under the new
+version with the date.
+
 The three packages share one version and are released together. To cut a
 release, set the same version in all three `pyproject.toml` files and in
 `deploy/helm/ushabti/Chart.yaml`, and raise the `ushabti>=` bound in the agent

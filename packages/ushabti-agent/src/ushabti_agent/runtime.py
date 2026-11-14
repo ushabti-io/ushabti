@@ -15,6 +15,7 @@ from collections.abc import Callable, Collection
 from dataclasses import dataclass
 from dataclasses import field as dataclass_field
 from datetime import UTC, datetime, timedelta
+from typing import Final
 
 import structlog
 from prometheus_client import CollectorRegistry, Counter, Gauge
@@ -58,6 +59,58 @@ _log = structlog.get_logger(__name__)
 
 _HOUR = timedelta(hours=1)
 _DRIFTING = (MaatStatus.ISFET, MaatStatus.OMEN)
+
+FEED_TEXT_LIMIT: Final = 500
+"""Longest text the log feed carries. Papyrus keeps the whole of it."""
+
+# The log feed: what each Papyrus event says in the process log, so a log
+# pipeline shows the vigil as it happens. Only the keys that tell the story.
+# Never the data an implement returned, the arguments a call carried, or the
+# result an action produced: those stay in Papyrus. Ticks are logged with
+# their counts at the end of the tick; halt and resume log on their own.
+_FEED: Final[dict[PapyrusEvent, tuple[str, ...]]] = {
+    PapyrusEvent.OBSERVATION: ("assertion", "implement", "field", "ok", "error"),
+    PapyrusEvent.ISFET: ("assertion", "field", "observed", "expected"),
+    PapyrusEvent.OMEN: ("assertion", "field", "observed", "warning"),
+    PapyrusEvent.IN_BALANCE: ("assertion", "reason"),
+    PapyrusEvent.SUMMONS: ("id", "source", "state", "reason", "detail", "field"),
+    PapyrusEvent.PROPOSAL: ("summons", "step", "stop_reason", "content", "calls"),
+    PapyrusEvent.VERDICT: ("summons", "implement", "kind", "rule", "reason"),
+    PapyrusEvent.ACTION: ("summons", "implement", "kind", "ok", "error"),
+}
+_FEED_WARNINGS: Final = frozenset({"failed", "escalated"})
+"""Summons states worth a warning rather than an info line."""
+
+
+def feed_fields(
+    event: PapyrusEvent, payload: dict[str, JsonValue], verdict: Verdict | None
+) -> dict[str, JsonValue] | None:
+    """What the log feed says about a Papyrus entry, or None when it says nothing."""
+    keys = _FEED.get(event)
+    if keys is None:
+        return None
+    fields: dict[str, JsonValue] = {}
+    for key in keys:
+        if key not in payload:
+            continue
+        value = payload[key]
+        if key == "calls" and isinstance(value, list):
+            # The names of the proposed calls, never their arguments.
+            value = [call.get("name") if isinstance(call, dict) else None for call in value]
+        fields[key] = _cut(value)
+    if verdict is not None:
+        fields["verdict"] = verdict.value
+    return fields
+
+
+def _cut(value: JsonValue) -> JsonValue:
+    """A value short enough for a log line. Longer text ends in a marker."""
+    if isinstance(value, str):
+        return value if len(value) <= FEED_TEXT_LIMIT else value[:FEED_TEXT_LIMIT] + " [cut]"
+    if isinstance(value, dict | list):
+        text = json.dumps(value)
+        return value if len(text) <= FEED_TEXT_LIMIT else text[:FEED_TEXT_LIMIT] + " [cut]"
+    return value
 
 
 def utc_now() -> datetime:
@@ -301,6 +354,17 @@ class Ushabti:
 
             self._last_vigil = self._clock()
             self.metrics.vigil_ticks.inc()
+            _log.info(
+                "vigil_tick",
+                ushabti=self.name,
+                tick=self._tick,
+                halted=halted,
+                observed=observed,
+                unknown=unknown,
+                isfet=len(found_isfet),
+                omens=len(found_omens),
+                raised=len(raised),
+            )
             return TickReport(
                 tick=self._tick,
                 halted=halted,
@@ -617,6 +681,13 @@ class Ushabti:
                 verdict=verdict,
             )
         )
+        fields = feed_fields(event, payload, verdict)
+        if fields is not None:
+            worrying = event is PapyrusEvent.ISFET or (
+                event is PapyrusEvent.SUMMONS and payload.get("state") in _FEED_WARNINGS
+            )
+            log = _log.warning if worrying else _log.info
+            log(event.value, ushabti=self.name, **fields)
 
     def _writes_in_last_hour(self) -> int:
         cutoff = self._clock() - _HOUR

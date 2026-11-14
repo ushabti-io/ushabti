@@ -161,7 +161,12 @@ Each step, in order:
 
 14. **Papyrus.** Every step above is one line in the audit log: the tick, each
     observation, isfet, omens, each summons as it is queued and as it ends,
-    each proposal, each verdict, each action, and each halt and resume.
+    each proposal, each verdict, each action, and each halt and resume. The
+    same steps go to the process log as structured lines at `info` (isfet, and
+    a summons that fails or is escalated, at `warning`), trimmed: no
+    observation data, no call arguments, no action results, and text cut at
+    500 characters. A log pipeline shows the vigil live; Papyrus keeps the
+    whole record. `USHABTI_LOG_LEVEL=WARNING` keeps only the warnings.
 
 15. **Back to the vigil.** The loop waits for the next tick or the next
     summons, whichever comes first.

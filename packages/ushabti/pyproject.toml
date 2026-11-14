@@ -1,6 +1,6 @@
 [project]
 name = "ushabti"
-version = "0.1.0.dev1"
+version = "0.1.0.dev2"
 description = "SDK for Ushabti, an open-source DevOps agent harness: spells, implements, weighing, and papyrus."
 readme = "README.md"
 requires-python = ">=3.12"

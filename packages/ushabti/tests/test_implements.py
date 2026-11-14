@@ -33,8 +33,14 @@ DECLARED = {
     "prometheus.query": ImplementKind.READ,
     "prometheus.query_range": ImplementKind.READ,
 }
-# The Prometheus implements are built. The rest are still scaffold stubs.
-STUBS = {name: kind for name, kind in DECLARED.items() if not name.startswith("prometheus.")}
+# The Prometheus implements and the Kubernetes reads are built. The rest are scaffold stubs.
+BUILT = {
+    "prometheus.query",
+    "prometheus.query_range",
+    "kubernetes.list_pods",
+    "kubernetes.get_deployment",
+}
+STUBS = {name: kind for name, kind in DECLARED.items() if name not in BUILT}
 
 WRITES = [i for i in builtin_implements() if i.kind is ImplementKind.WRITE]
 READS = [i for i in builtin_implements() if i.kind is ImplementKind.READ]
@@ -123,7 +129,7 @@ def test_every_declared_operation_has_its_kind() -> None:
     registry = default_registry()
     assert {name: registry.get(name).kind for name in DECLARED} == DECLARED
     assert set(registry.names()) == {*DECLARED, "noop.read", "noop.write"}
-    assert len(STUBS) == 7
+    assert len(STUBS) == 5
 
 
 @pytest.mark.parametrize("name", sorted(STUBS))

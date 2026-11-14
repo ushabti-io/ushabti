@@ -1,0 +1,48 @@
+apiVersion: ushabti/v1alpha1
+kind: Spell
+metadata:
+  name: workloads-watcher
+spec:
+  role: Watch the workloads of the homelab K3s cluster and say what is wrong before it bites.
+  instructions: |
+    You have read implements only. Look at the pods and deployments in the
+    namespaces you tend, explain what you find in plain words, and say what an
+    operator should do about it. Never state a count you did not observe.
+  model:
+    provider: anthropic            # anthropic | openai_compatible | fake
+    name: ${USHABTI_MODEL}         # never hard-code a model ID
+    api_key: ${ANTHROPIC_API_KEY}  # environment reference only
+  fields:
+    - name: homelab-k3s
+      kind: kubernetes
+      # The implements refuse any namespace that is not listed here.
+      namespaces: [monitoring]
+      # Outside the cluster, name the kubeconfig context to use. Inside it, the
+      # pod's service account is used and this line is ignored.
+      # context: homelab
+  implements:
+    - kubernetes.list_pods
+    - kubernetes.get_deployment
+  # Each assertion below is machine-checked. The vigil runs `observe`, reads
+  # `path` out of the result, and compares. `not_ready` counts pods that are not
+  # running with every container ready (finished jobs excluded). `missing` is a
+  # deployment's desired replicas minus its ready ones.
+  maat:
+    - id: monitoring-pods-are-ready
+      description: Every pod in the monitoring namespace is running with all of its containers ready.
+      observe:
+        implement: kubernetes.list_pods
+        arguments: {namespace: monitoring}
+      expect: {path: not_ready, op: eq, value: 0}
+    - id: kube-state-metrics-has-its-replicas
+      description: The kube-state-metrics deployment has as many ready replicas as it asks for.
+      observe:
+        implement: kubernetes.get_deployment
+        arguments: {namespace: monitoring, name: kube-prometheus-stack-kube-state-metrics}
+      expect: {path: missing, op: eq, value: 0}
+  weighing:
+    dry_run: true
+  vigil:
+    interval: 60s
+  papyrus:
+    path: /var/lib/ushabti/papyrus.jsonl

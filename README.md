@@ -13,8 +13,10 @@ local servers such as Ollama and vLLM. The first target is a homelab: K3s on
 Proxmox, with Prometheus metrics.
 
 > **Status: scaffold.** The interfaces, data models, wiring, safety gate, audit
-> log, and tests are real. The Kubernetes, Proxmox, and Prometheus integrations
-> are declared stubs that raise `NotImplementedError`. See [Status](#status).
+> log, and tests are real. The Prometheus implements and the Kubernetes read
+> implements work against real systems. The Kubernetes write implements and the
+> Proxmox implements are declared stubs that raise `NotImplementedError`. See
+> [Status](#status).
 
 ## The name
 
@@ -183,14 +185,19 @@ Papyrus, the vigil loop, summons handling, halt and resume, the overseer's
 registry, decades and routing, the fake model provider, and minimal Anthropic
 and OpenAI-compatible providers.
 
-What works against a real system: the `prometheus.*` implements. An ushabti
-can keep its vigil over Prometheus metrics today, as
+What works against a real system: the `prometheus.*` implements and the
+Kubernetes read implements, `kubernetes.list_pods` and
+`kubernetes.get_deployment`. An ushabti can keep its vigil over Prometheus
+metrics and over the pods and deployments of a cluster today, as
 [`examples/spells/metrics-watcher.yaml`](examples/spells/metrics-watcher.yaml)
-shows.
+and
+[`examples/spells/workloads-watcher.yaml`](examples/spells/workloads-watcher.yaml)
+show.
 
-What is a stub: the `kubernetes.*` and `proxmox.*` implements. Each is declared
-with its kind and its parameters, and raises `NotImplementedError`. Until they
-are built, an ushabti can observe through Prometheus and reason, but cannot act.
+What is a stub: the Kubernetes write implements and the `proxmox.*`
+implements. Each is declared with its kind and its parameters, and raises
+`NotImplementedError`. Until they are built, an ushabti can observe and reason,
+but cannot act.
 
 The quick start builds the images locally, so it always runs the code you have
 checked out. Each release also pushes them to `ghcr.io/ushabti-io`, tagged with

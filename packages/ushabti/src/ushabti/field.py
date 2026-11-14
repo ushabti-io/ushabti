@@ -25,7 +25,13 @@ class Field(StrictModel):
     """What the field is: `kubernetes`, `proxmox`, `prometheus`, or `service`."""
 
     namespaces: tuple[str, ...] = ()
-    """Kubernetes namespaces to tend. Only valid when `kind` is `kubernetes`."""
+    """Kubernetes namespaces to tend. The Kubernetes implements refuse any other
+    namespace. Only valid when `kind` is `kubernetes`."""
+
+    context: str | None = None
+    """Kubeconfig context to reach the cluster through when the ushabti runs outside
+    it. Inside a cluster the pod's service account is used and this is ignored. Only
+    valid when `kind` is `kubernetes`."""
 
     nodes: tuple[str, ...] = ()
     """Proxmox node names to tend. Only valid when `kind` is `proxmox`."""
@@ -39,4 +45,6 @@ class Field(StrictModel):
             raise ValueError("namespaces is only valid when kind is kubernetes")
         if self.nodes and self.kind is not FieldKind.PROXMOX:
             raise ValueError("nodes is only valid when kind is proxmox")
+        if self.context is not None and self.kind is not FieldKind.KUBERNETES:
+            raise ValueError("context is only valid when kind is kubernetes")
         return self

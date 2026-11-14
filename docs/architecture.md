@@ -219,8 +219,8 @@ installs and runs without them.
 
 ## What is not built yet
 
-- The `kubernetes.*` and `proxmox.*` implements are stubs. The `prometheus.*`
-  implements are real.
+- The Kubernetes write implements and the `proxmox.*` implements are stubs. The
+  `prometheus.*` implements and the Kubernetes read implements are real.
 - The overseer's registry is in memory and is empty after a restart.
 - There is one overseer. Coordination between several, and leader election,
   are not built.

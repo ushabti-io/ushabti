@@ -75,7 +75,8 @@ A target an ushabti tends: a K3s cluster, a namespace, a Proxmox node, a service
 |---|---|---|---|
 | `name` | string | **required** | Name of the field. A summons (a unit of work) refers to a field by this name. |
 | `kind` | one of `kubernetes`, `proxmox`, `prometheus`, `service` | **required** | What the field is: `kubernetes`, `proxmox`, `prometheus`, or `service`. |
-| `namespaces` | list of strings | `[]` | Kubernetes namespaces to tend. Only valid when `kind` is `kubernetes`. |
+| `namespaces` | list of strings | `[]` | Kubernetes namespaces to tend. The Kubernetes implements refuse any other namespace. Only valid when `kind` is `kubernetes`. |
+| `context` | string | none | Kubeconfig context to reach the cluster through when the ushabti runs outside it. Inside a cluster the pod's service account is used and this is ignored. Only valid when `kind` is `kubernetes`. |
 | `nodes` | list of strings | `[]` | Proxmox node names to tend. Only valid when `kind` is `proxmox`. |
 | `endpoint` | string | none | Base URL of the field, usually an environment reference such as `${PROMETHEUS_URL}`. |
 
@@ -201,8 +202,8 @@ weighing.
 |---|---|---|---|
 | `noop.read` | `read` | Return the given arguments unchanged. Observes nothing real. | ready |
 | `noop.write` | `write` | Pretend to change something. Changes nothing real. | ready |
-| `kubernetes.list_pods` | `read` | List the pods in a namespace with their phase and readiness. | scaffold stub, not implemented yet |
-| `kubernetes.get_deployment` | `read` | Get one deployment with its desired and ready replica counts. | scaffold stub, not implemented yet |
+| `kubernetes.list_pods` | `read` | List the pods in a namespace with their phase and readiness. Returns each pod, the count, `not_ready` (pods that are not running with every container ready, finished jobs excluded), the total restarts, and the reasons containers are waiting or have failed, such as CrashLoopBackOff. | ready |
+| `kubernetes.get_deployment` | `read` | Get one deployment with its desired and ready replica counts. Returns the counts under `replicas`, `missing` (desired minus ready), whether it is `ready`, its conditions, and the images it runs. | ready |
 | `kubernetes.restart_deployment` | `write` | Restart a deployment by rolling its pods. | scaffold stub, not implemented yet |
 | `kubernetes.scale_deployment` | `write` | Set the replica count of a deployment. | scaffold stub, not implemented yet |
 | `proxmox.node_status` | `read` | Get the status of a Proxmox node: uptime, CPU, memory, storage. | scaffold stub, not implemented yet |

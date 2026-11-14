@@ -1,0 +1,62 @@
+# gitleaks reads this file on its own. The pre-commit hook and the CI job both
+# use it. It keeps the default rules for secrets and adds rules for the shape
+# of private infrastructure detail.
+#
+# This repository is public, so nothing here names a real network or host.
+# Names that are private to one person go in that person's own terms file. See
+# "Secrets and private details" in CONTRIBUTING.md.
+title = "ushabti"
+
+[extend]
+useDefault = true
+
+[[rules]]
+id = "tailnet-hostname"
+description = "A Tailscale tailnet hostname. Use a host under example.invalid."
+regex = '''(?i)\b[a-z0-9-]+\.ts\.net\b'''
+keywords = [".ts.net"]
+
+[[rules]]
+id = "private-ip-address"
+description = "A private or carrier-grade NAT IPv4 address. Use a documentation range, such as 192.0.2.0/24."
+regex = '''\b(?:10\.\d{1,3}\.\d{1,3}\.\d{1,3}|192\.168\.\d{1,3}\.\d{1,3}|172\.(?:1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3}|100\.(?:6[4-9]|[7-9]\d|1[01]\d|12[0-7])\.\d{1,3}\.\d{1,3})\b'''
+
+[[rules]]
+id = "local-network-hostname"
+description = "A hostname on a home or local network. Use a host under example.invalid."
+regex = '''(?i)\b[a-z0-9-]+\.(?:home\.arpa|lan)\b'''
+keywords = [".home.arpa", ".lan"]
+
+[[rules]]
+id = "email-address"
+description = "An email address. Use an address under example.invalid, or a GitHub noreply address."
+regex = '''[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}\b'''
+keywords = ["@"]
+
+[[rules.allowlists]]
+description = "Reserved example domains, noreply addresses, and git remotes."
+regexes = [
+    '''(?i)@(?:[a-z0-9-]+\.)*(?:example\.(?:com|net|org)|example|invalid|test)$''',
+    '''(?i)@users\.noreply\.github\.com$''',
+    '''(?i)^(?:git|noreply)@''',
+]
+
+[[rules]]
+id = "sensitive-file"
+description = "A file that usually holds credentials or private state. Keep it out of the repository."
+path = '''(?i)(?:^|/)(?:\.env(?:\.[^/]+)?|[^/]*kubeconfig[^/]*|[^/]+\.(?:pem|key|p12|pfx|kdbx|tfstate|tfstate\.backup|tfvars)|id_(?:rsa|dsa|ecdsa|ed25519))$'''
+
+[[rules.allowlists]]
+description = "The example environment file holds no values."
+paths = ['''(?:^|/)\.env\.example$''']
+
+# The test of these rules has to hold strings that match them.
+[[allowlists]]
+description = "Samples in the test of this file."
+targetRules = [
+    "tailnet-hostname",
+    "private-ip-address",
+    "local-network-hostname",
+    "email-address",
+]
+paths = ['''^packages/ushabti/tests/test_secret_scanning\.py$''']

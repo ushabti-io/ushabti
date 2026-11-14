@@ -27,7 +27,7 @@ holds the glossary, the architecture, the safety model, and the spell reference.
 uv sync --all-packages     # set up
 uv run ruff check .        # lint
 uv run ruff format .       # format; CI runs it with --check
-uv run mypy packages       # type-check, strict
+uv run mypy packages scripts   # type-check, strict
 uv run pytest              # every test
 uv run pytest packages/ushabti/tests/test_weighing.py -k order   # one file, one test
 ```
@@ -115,6 +115,19 @@ test pass. If a change touches one, say which and why.
 - `docs/spells.md` is generated. Do not edit it. After changing a model or an
   implement, run `uv run python -m ushabti.reference > docs/spells.md`. A test
   fails when it is stale.
+
+## Secrets and private details
+
+- The repository is public. Never commit a real hostname, tailnet name, private
+  IP address, email address, or credential file. The `gitleaks` hook and the
+  `secrets` job in CI enforce this with the rules in `.gitleaks.toml`.
+- Use hosts under `example.invalid` and addresses from `192.0.2.0/24`.
+- `.gitleaks.toml` and `scripts/check_sensitive_terms.py` must never name a
+  real network or host. Private names live in each person's own terms file,
+  outside the repository.
+- Do not commit with `--no-verify`. If a rule is wrong, fix the rule.
+- `test_secret_scanning.py` tests both. It is the only file exempt from the
+  rules it tests.
 
 ## Tests
 

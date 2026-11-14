@@ -102,9 +102,29 @@
     },
     "metrics": {
       "type": "object",
-      "required": ["serviceMonitor"],
+      "required": ["serviceMonitor", "grafanaDashboard"],
       "additionalProperties": false,
       "properties": {
+        "grafanaDashboard": {
+          "type": "object",
+          "required": ["enabled"],
+          "additionalProperties": false,
+          "properties": {
+            "enabled": {"type": "boolean"},
+            "namespace": {"type": "string"},
+            "label": {
+              "type": "object",
+              "required": ["key", "value"],
+              "additionalProperties": false,
+              "properties": {
+                "key": {"type": "string", "minLength": 1},
+                "value": {"type": "string"}
+              }
+            },
+            "folder": {"type": "string"},
+            "folderAnnotation": {"type": "string", "minLength": 1}
+          }
+        },
         "serviceMonitor": {
           "type": "object",
           "required": ["enabled", "prometheusNamespace"],

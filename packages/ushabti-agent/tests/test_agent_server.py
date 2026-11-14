@@ -1,5 +1,6 @@
 """The HTTP API of one ushabti."""
 
+import re
 import time
 from collections.abc import Iterator
 from pathlib import Path
@@ -84,6 +85,7 @@ def test_metrics_exposes_the_promised_series(client: TestClient) -> None:
         "ushabti_omens_total 0.0",
         'ushabti_verdicts_total{verdict="PASS"} 0.0',
         'ushabti_verdicts_total{verdict="DRY_RUN"} 0.0',
+        "ushabti_last_vigil_timestamp_seconds 0.0",
         'ushabti_verdicts_total{verdict="NEEDS_APPROVAL"} 0.0',
         'ushabti_verdicts_total{verdict="REJECT"} 0.0',
         'ushabti_actions_total{kind="write"} 0.0',
@@ -91,6 +93,38 @@ def test_metrics_exposes_the_promised_series(client: TestClient) -> None:
         "ushabti_halted 0.0",
     ):
         assert series in body, series
+
+
+def status_series(body: str, status: str) -> str:
+    return f'ushabti_assertion_status{{assertion="service-healthy",status="{status}"}}'
+
+
+def gauge(body: str, name: str) -> float:
+    match = re.search(rf"^{name} (\S+)$", body, re.M)
+    assert match is not None, name
+    return float(match.group(1))
+
+
+async def test_metrics_show_each_assertion_status_and_the_last_vigil(tmp_path: Path) -> None:
+    world = World(tmp_path, provider=FakeProvider([proposing(write_call())]))
+    with client_for(world) as client:
+        before = client.get("/metrics").text
+        assert f"{status_series(before, 'unknown')} 1.0" in before
+        assert f"{status_series(before, 'isfet')} 0.0" in before
+        assert gauge(before, "ushabti_last_vigil_timestamp_seconds") == 0.0
+
+        await world.ushabti.tick()
+        after = client.get("/metrics").text
+        assert f"{status_series(after, 'isfet')} 1.0" in after
+        assert f"{status_series(after, 'unknown')} 0.0" in after
+        assert f"{status_series(after, 'in_balance')} 0.0" in after
+        assert gauge(after, "ushabti_last_vigil_timestamp_seconds") == world.clock.now.timestamp()
+
+        world.ushabti.halt()
+        world.ushabti.resume()
+        reset = client.get("/metrics").text
+        assert f"{status_series(reset, 'unknown')} 1.0" in reset
+        assert f"{status_series(reset, 'isfet')} 0.0" in reset
 
 
 async def test_metrics_count_what_happened(tmp_path: Path) -> None:

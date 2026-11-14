@@ -139,6 +139,8 @@ The Helm chart is in [`deploy/helm/ushabti`](deploy/helm/ushabti). Its
 [`values.yaml`](deploy/helm/ushabti/values.yaml) explains each setting. With
 `metrics.serviceMonitor.enabled: true`, a Prometheus Operator scrapes each
 ushabti's `/metrics`, and the chart's NetworkPolicy lets that Prometheus in.
+`metrics.grafanaDashboard.enabled: true` adds the "Ushabti vigil" Grafana
+dashboard as a ConfigMap for the kube-prometheus-stack sidecar.
 
 ## Safety defaults
 

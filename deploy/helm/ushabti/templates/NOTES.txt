@@ -11,6 +11,13 @@ Check on them:
 
 Metrics are scraped through ServiceMonitor {{ include "ushabti.fullname" . }} by the
 Prometheus in {{ .Values.metrics.serviceMonitor.prometheusNamespace }}.
+{{- if .Values.metrics.grafanaDashboard.enabled }}
+The Grafana dashboard "Ushabti vigil" is in ConfigMap
+{{ include "ushabti.fullname" . }}-grafana-dashboard in
+{{ default .Release.Namespace .Values.metrics.grafanaDashboard.namespace }}.
+{{- else }}
+Set metrics.grafanaDashboard.enabled for the "Ushabti vigil" Grafana dashboard.
+{{- end }}
 {{- else }}
 
 Metrics are at /metrics on the same port. Set metrics.serviceMonitor.enabled

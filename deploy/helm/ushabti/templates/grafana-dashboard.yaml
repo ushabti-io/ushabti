@@ -1,0 +1,21 @@
+{{- if .Values.metrics.grafanaDashboard.enabled }}
+{{- $board := .Values.metrics.grafanaDashboard }}
+# The Grafana dashboard for the vigil, as a ConfigMap the kube-prometheus-stack
+# Grafana sidecar picks up by label. The sidecar usually watches only Grafana's
+# own namespace, so metrics.grafanaDashboard.namespace names it.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "ushabti.fullname" . }}-grafana-dashboard
+  namespace: {{ default .Release.Namespace $board.namespace }}
+  labels:
+    {{- include "ushabti.labels" . | nindent 4 }}
+    {{ $board.label.key }}: {{ $board.label.value | quote }}
+  {{- with $board.folder }}
+  annotations:
+    {{ $board.folderAnnotation }}: {{ . | quote }}
+  {{- end }}
+data:
+  ushabti-vigil.json: |-
+    {{- .Files.Get "dashboards/ushabti-vigil.json" | nindent 4 }}
+{{- end }}

@@ -150,10 +150,27 @@ class Metrics:
         self.halted = Gauge(
             "ushabti_halted", "1 when the ushabti is halted, else 0.", registry=self.registry
         )
+        self.assertion_status = Gauge(
+            "ushabti_assertion_status",
+            "1 for the current Ma'at status of an assertion, 0 for the other statuses.",
+            ["assertion", "status"],
+            registry=self.registry,
+        )
+        self.last_vigil = Gauge(
+            "ushabti_last_vigil_timestamp_seconds",
+            "Unix time of the last completed vigil tick.",
+            registry=self.registry,
+        )
         for verdict in Verdict:
             self.verdicts.labels(verdict=verdict.value)
         for kind in ImplementKind:
             self.actions.labels(kind=kind.value)
+
+    def set_assertion_status(self, assertion: str, status: MaatStatus) -> None:
+        """Mark one status of an assertion as current and the others as not."""
+        for candidate in MaatStatus:
+            value = 1 if candidate is status else 0
+            self.assertion_status.labels(assertion=assertion, status=candidate.value).set(value)
 
 
 @dataclass(frozen=True, slots=True)
@@ -203,6 +220,8 @@ class Ushabti:
         self._tick = 0
         self._last_vigil: datetime | None = None
         self._statuses: dict[str, MaatStatus] = {}
+        for assertion in self._maat.checkable:
+            self.metrics.set_assertion_status(assertion.id, MaatStatus.UNKNOWN)
         self._writes: deque[datetime] = deque()
         self._summonses: dict[str, Summons] = {}
         self._pending: deque[str] = deque()
@@ -294,6 +313,8 @@ class Ushabti:
         self._record(PapyrusEvent.RESUME, {"by": by})
         # Forget what was seen while halted, so standing drift raises a summons again.
         self._statuses.clear()
+        for assertion in self._maat.checkable:
+            self.metrics.set_assertion_status(assertion.id, MaatStatus.UNKNOWN)
         self._wake.set()
         _log.warning("resumed", ushabti=self.name, by=by)
         return True
@@ -322,6 +343,7 @@ class Ushabti:
                 if not ok:
                     unknown += 1
                     self._statuses[assertion.id] = MaatStatus.UNKNOWN
+                    self.metrics.set_assertion_status(assertion.id, MaatStatus.UNKNOWN)
                     continue
                 outcome = self._maat.evaluate(
                     assertion,
@@ -332,6 +354,7 @@ class Ushabti:
                 )
                 previous = self._statuses.get(assertion.id)
                 self._statuses[assertion.id] = outcome.status
+                self.metrics.set_assertion_status(assertion.id, outcome.status)
                 if outcome.status is MaatStatus.UNKNOWN:
                     unknown += 1
                 elif outcome.isfet is not None and previous is not MaatStatus.ISFET:
@@ -354,6 +377,7 @@ class Ushabti:
 
             self._last_vigil = self._clock()
             self.metrics.vigil_ticks.inc()
+            self.metrics.last_vigil.set(self._last_vigil.timestamp())
             _log.info(
                 "vigil_tick",
                 ushabti=self.name,

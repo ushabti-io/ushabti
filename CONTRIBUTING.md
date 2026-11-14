@@ -69,6 +69,37 @@ docker build -f deploy/docker/overseer.Dockerfile -t ushabti-overseer:dev .
 - Never put a real secret, model ID, hostname, or IP address in a test. Use
   names such as `test-model` and hosts under `example.invalid`.
 
+### Secrets and private details
+
+This repository is public. Two hooks run on every commit to keep secrets and
+the details of anyone's own infrastructure out of it.
+
+- `gitleaks` checks staged changes with its default rules for secrets and the
+  rules in `.gitleaks.toml`. Those flag tailnet hostnames, private IP
+  addresses, hostnames on a local network, email addresses, and files that
+  usually hold credentials, such as a kubeconfig or a `.pem` file. Continuous
+  integration runs the same rules over every commit. pre-commit builds gitleaks
+  the first time, which takes a minute.
+- `sensitive-terms` checks staged files and the commit message against a terms
+  file of your own. Put the names that are private to you in it: hosts,
+  domains, usernames. The file is `~/.config/sensitive-terms.txt`, or the path
+  in `SENSITIVE_TERMS_FILE`. It holds one term per line, matched anywhere and
+  without regard to case. Start a line with `re:` for a regular expression and
+  with `#` for a comment. With no file, the hook passes. It runs only on your
+  machine, and a finding never prints the term.
+
+In examples and tests, use hosts under `example.invalid`, addresses from a
+documentation range such as `192.0.2.0/24`, and email addresses under
+`example.invalid`.
+
+If gitleaks flags something that is safe to publish, add an allowlist to the
+rule in `.gitleaks.toml` and say why in its description. Do not skip the hooks
+with `--no-verify`.
+
+To move gitleaks to a new version, run
+`uv run pre-commit autoupdate --freeze --repo https://github.com/gitleaks/gitleaks`
+and change the image in `.github/workflows/ci.yaml` to the same version.
+
 ### Dependencies
 
 Add a dependency with `uv add`, so the lock file records the version that

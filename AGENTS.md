@@ -116,6 +116,19 @@ test pass. If a change touches one, say which and why.
   implement, run `uv run python -m ushabti.reference > docs/spells.md`. A test
   fails when it is stale.
 
+## Secrets and private details
+
+- The repository is public. Never commit a real hostname, tailnet name, private
+  IP address, email address, or credential file. The `gitleaks` hook and the
+  `secrets` job in CI enforce this with the rules in `.gitleaks.toml`.
+- Use hosts under `example.invalid` and addresses from `192.0.2.0/24`.
+- `.gitleaks.toml` and `scripts/check_sensitive_terms.py` must never name a
+  real network or host. Private names live in each person's own terms file,
+  outside the repository.
+- Do not commit with `--no-verify`. If a rule is wrong, fix the rule.
+- `test_secret_scanning.py` tests both. It is the only file exempt from the
+  rules it tests.
+
 ## Tests
 
 - Test files have names unique across the whole repository, such as

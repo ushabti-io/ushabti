@@ -1,6 +1,17 @@
 # The hooks run the tools from the uv environment, so pre-commit and CI always
 # use the versions recorded in uv.lock. Install with: uv run pre-commit install
+#
+# gitleaks is the exception. It is a Go program, so pre-commit builds it from
+# the pinned commit. Keep that pin and the image in ci.yaml on one version.
+default_install_hook_types: [pre-commit, commit-msg]
+default_stages: [pre-commit]
+
 repos:
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: 83d9cd684c87d95d656c1458ef04895a7f1cbd8e # frozen: v8.30.1
+    hooks:
+      - id: gitleaks
+
   - repo: local
     hooks:
       - id: ruff-check
@@ -21,4 +32,12 @@ repos:
         language: system
         types_or: [python, pyi]
         pass_filenames: false
+        require_serial: true
+      # Checks staged files and the commit message against a terms file that
+      # lives outside the repository. It passes when you have no such file.
+      - id: sensitive-terms
+        name: sensitive terms (private, optional)
+        entry: uv run python scripts/check_sensitive_terms.py
+        language: system
+        stages: [pre-commit, commit-msg]
         require_serial: true

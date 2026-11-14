@@ -142,6 +142,25 @@ networkPolicy:
   #      matchLabels:
   #        kubernetes.io/metadata.name: monitoring
 
+# Scraping /metrics (vigil ticks, isfet, omens, verdicts, actions, the halted
+# flag) with the Prometheus Operator. Each ushabti answers /metrics without the
+# token. The overseer has no /metrics, so only the ushabti are scraped.
+metrics:
+  serviceMonitor:
+    # Creates a ServiceMonitor for the ushabti Services and, while on, lets
+    # the Prometheus named below through the NetworkPolicy.
+    enabled: false
+    # Where to create the ServiceMonitor. "" means the release namespace.
+    namespace: ""
+    # Labels the Prometheus selects ServiceMonitors by, for example
+    # release: kube-prometheus-stack.
+    labels: {}
+    interval: 30s
+    scrapeTimeout: 10s
+    # The namespace the scraping Prometheus runs in. Its pods are allowed to
+    # reach the ushabti http port while the ServiceMonitor is enabled.
+    prometheusNamespace: monitoring
+
 # The spells, by name. Each becomes a file in one ConfigMap.
 # Keep dry_run: true until you have read docs/safety.md.
 spells:

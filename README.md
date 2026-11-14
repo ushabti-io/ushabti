@@ -128,7 +128,9 @@ the summons.
 ### Kubernetes
 
 The Helm chart is in [`deploy/helm/ushabti`](deploy/helm/ushabti). Its
-[`values.yaml`](deploy/helm/ushabti/values.yaml) explains each setting.
+[`values.yaml`](deploy/helm/ushabti/values.yaml) explains each setting. With
+`metrics.serviceMonitor.enabled: true`, a Prometheus Operator scrapes each
+ushabti's `/metrics`, and the chart's NetworkPolicy lets that Prometheus in.
 
 ## Safety defaults
 

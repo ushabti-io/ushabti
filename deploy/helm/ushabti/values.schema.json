@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "Values for the ushabti chart",
   "type": "object",
-  "required": ["mode", "ushabti", "spells", "agent", "overseer", "adminToken", "networkPolicy"],
+  "required": ["mode", "ushabti", "spells", "agent", "overseer", "adminToken", "networkPolicy", "metrics"],
   "properties": {
     "mode": {
       "description": "Topology: solo, independent, or overseen.",
@@ -98,6 +98,26 @@
       "properties": {
         "enabled": {"type": "boolean"},
         "ingressFrom": {"type": "array", "items": {"type": "object"}}
+      }
+    },
+    "metrics": {
+      "type": "object",
+      "required": ["serviceMonitor"],
+      "additionalProperties": false,
+      "properties": {
+        "serviceMonitor": {
+          "type": "object",
+          "required": ["enabled", "prometheusNamespace"],
+          "additionalProperties": false,
+          "properties": {
+            "enabled": {"type": "boolean"},
+            "namespace": {"type": "string"},
+            "labels": {"type": "object", "additionalProperties": {"type": "string"}},
+            "interval": {"type": "string", "pattern": "^[0-9]+(ms|s|m|h)$"},
+            "scrapeTimeout": {"type": "string", "pattern": "^[0-9]+(ms|s|m|h)$"},
+            "prometheusNamespace": {"type": "string", "minLength": 1}
+          }
+        }
       }
     }
   }

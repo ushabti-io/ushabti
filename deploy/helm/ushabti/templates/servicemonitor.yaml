@@ -1,0 +1,30 @@
+{{- if .Values.metrics.serviceMonitor.enabled }}
+{{- $monitor := .Values.metrics.serviceMonitor }}
+# Lets a Prometheus Operator scrape /metrics from every ushabti Service. The
+# overseer has no /metrics, so its Service is left out. While this exists, the
+# NetworkPolicy lets the Prometheus in metrics.serviceMonitor.prometheusNamespace
+# reach the http port.
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "ushabti.fullname" . }}
+  namespace: {{ default .Release.Namespace $monitor.namespace }}
+  labels:
+    {{- include "ushabti.labels" . | nindent 4 }}
+    {{- with $monitor.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  namespaceSelector:
+    matchNames:
+      - {{ .Release.Namespace }}
+  selector:
+    matchLabels:
+      {{- include "ushabti.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: ushabti
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: {{ $monitor.interval }}
+      scrapeTimeout: {{ $monitor.scrapeTimeout }}
+{{- end }}

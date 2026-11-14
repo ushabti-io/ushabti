@@ -160,6 +160,8 @@ test pass. If a change touches one, say which and why.
 - Only `ushabti` goes to PyPI. The agent and overseer packages carry the
   `Private :: Do Not Upload` classifier. Leave it there.
 - The three packages share one version.
+- `CHANGELOG.md` gets a line for every user-visible change, under Unreleased,
+  naming the pull request. A release moves the lines under its version.
 - GitHub Actions are pinned to commit SHAs. The uv version lives in one place,
   the `FROM ghcr.io/astral-sh/uv:` line of the Dockerfiles, and the workflows
   read it from there. Both Dockerfiles must have identical `FROM` lines.

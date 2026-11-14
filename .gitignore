@@ -20,6 +20,10 @@ htmlcov/
 # Editors and OS
 .idea/
 .vscode/
+
+# Claude Code: local settings and task worktrees
+.claude/settings.local.json
+.claude/worktree/
 *.swp
 *.swo
 *~

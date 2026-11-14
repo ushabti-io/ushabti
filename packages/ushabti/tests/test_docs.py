@@ -21,6 +21,7 @@ PAGES = [
     REPO / "README.md",
     REPO / "AGENTS.md",
     REPO / "CONTRIBUTING.md",
+    REPO / "CHANGELOG.md",
     REPO / "SECURITY.md",
     REPO / "CODE_OF_CONDUCT.md",
     *sorted(DOCS.glob("*.md")),

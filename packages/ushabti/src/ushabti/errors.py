@@ -50,6 +50,14 @@ class UnknownImplementError(UshabtiError, LookupError):
         super().__init__(f"{name} is not a registered implement")
 
 
+class ImplementError(UshabtiError):
+    """An implement could not do its work: bad arguments, no endpoint, or a failed call.
+
+    The message is safe to record in Papyrus. It never carries a secret or a
+    credential-bearing URL.
+    """
+
+
 class UnweighedWriteError(UshabtiError):
     """An implement was asked to run without a PASS verdict from the weighing.
 

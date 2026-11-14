@@ -18,9 +18,9 @@ FROM python:3.14-slim AS build
 
 COPY --from=uv /uv /bin/uv
 
-# Extras of ushabti-agent to install. The default covers both model providers.
-# Add kubernetes, proxmox, or prometheus once those implements are built.
-ARG EXTRAS="anthropic openai"
+# Extras of ushabti-agent to install. The default covers both model providers
+# and the Prometheus implements. Add kubernetes or proxmox once those are built.
+ARG EXTRAS="anthropic openai prometheus"
 
 ENV UV_COMPILE_BYTECODE=1 \
     UV_LINK_MODE=copy \

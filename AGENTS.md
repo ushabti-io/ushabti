@@ -108,9 +108,10 @@ test pass. If a change touches one, say which and why.
   descriptions in [docs/spells.md](docs/spells.md).
 - Never hard-code a model ID. The one exception is the Anthropic provider's
   default in `models/anthropic.py`.
-- Nine implements under `implements/` are scaffold stubs, marked
-  `# TODO(scaffold):` and raising `NotImplementedError`. To build one, keep its
-  `name`, `kind`, and `parameters`, write `_run`, and delete the marker.
+- Seven implements under `implements/`, the Kubernetes and Proxmox ones, are
+  scaffold stubs, marked `# TODO(scaffold):` and raising `NotImplementedError`.
+  To build one, keep its `name`, `kind`, and `parameters`, write `_run`, and
+  delete the marker.
 - `docs/spells.md` is generated. Do not edit it. After changing a model or an
   implement, run `uv run python -m ushabti.reference > docs/spells.md`. A test
   fails when it is stale.
@@ -167,7 +168,8 @@ Three tests compare the glossary, the diagrams, and the example spell with
 
 ## Known gaps
 
-- The `kubernetes.*`, `proxmox.*`, and `prometheus.*` implements are stubs.
+- The `kubernetes.*` and `proxmox.*` implements are stubs. The `prometheus.*`
+  ones are real, so a vigil over metrics works today.
 - `NEEDS_APPROVAL` is recorded and exposed, and nothing more. There is no way
   to approve a call yet.
 - Before any spell runs with `dry_run: false` against a real cluster, the

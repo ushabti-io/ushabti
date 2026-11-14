@@ -52,8 +52,8 @@ what it does not protect against.
   The author of a spell decides what the ushabti may do.
 - Anything that needs the admin token. The token is all-powerful within a
   workforce (everything deployed) by design.
-- The Kubernetes, Proxmox, and Prometheus implements not working. They are
-  declared stubs in this scaffold.
+- The Kubernetes and Proxmox implements not working. They are declared stubs
+  in this scaffold.
 
 ## Supported versions
 

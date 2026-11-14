@@ -43,7 +43,7 @@ ones.
 ```bash
 uv run ruff check .
 uv run ruff format --check .
-uv run mypy packages
+uv run mypy packages scripts
 uv run pytest --cov
 ```
 

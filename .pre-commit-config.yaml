@@ -28,7 +28,7 @@ repos:
         require_serial: true
       - id: mypy
         name: mypy (strict)
-        entry: uv run mypy packages
+        entry: uv run mypy packages scripts
         language: system
         types_or: [python, pyi]
         pass_filenames: false

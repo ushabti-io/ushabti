@@ -70,7 +70,7 @@ def in_repository(path: str) -> bool:
 
 def scan(path: str, text: str, terms: list[Term]) -> list[Finding]:
     """Find every term in the lines of one file, and in its name if it is committed."""
-    findings = []
+    findings: list[Finding] = []
     if in_repository(path):
         findings.extend(Finding(path, 0, term.line) for term in terms if term.pattern.search(path))
     for number, line in enumerate(text.splitlines(), start=1):

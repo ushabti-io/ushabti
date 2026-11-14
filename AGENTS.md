@@ -27,7 +27,7 @@ holds the glossary, the architecture, the safety model, and the spell reference.
 uv sync --all-packages     # set up
 uv run ruff check .        # lint
 uv run ruff format .       # format; CI runs it with --check
-uv run mypy packages       # type-check, strict
+uv run mypy packages scripts   # type-check, strict
 uv run pytest              # every test
 uv run pytest packages/ushabti/tests/test_weighing.py -k order   # one file, one test
 ```

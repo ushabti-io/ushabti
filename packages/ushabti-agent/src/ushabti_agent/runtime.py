@@ -11,7 +11,7 @@ import asyncio
 import json
 import uuid
 from collections import deque
-from collections.abc import Callable
+from collections.abc import Callable, Collection
 from dataclasses import dataclass
 from dataclasses import field as dataclass_field
 from datetime import UTC, datetime, timedelta
@@ -50,6 +50,7 @@ from ushabti import (
     WeighingRequest,
     WeighingResult,
     default_registry,
+    select_entries,
 )
 from ushabti_agent import __version__
 
@@ -188,6 +189,36 @@ class Ushabti:
     def summons(self, summons_id: str) -> Summons | None:
         """The summons with this id in its current state, if this ushabti knows it."""
         return self._summonses.get(summons_id)
+
+    def summonses(self, *, limit: int = 200) -> list[Summons]:
+        """The summonses this ushabti remembers, newest first."""
+        if limit < 1:
+            raise ValueError("limit must be at least 1")
+        ordered = sorted(self._summonses.values(), key=lambda s: s.created_at, reverse=True)
+        return ordered[:limit]
+
+    def papyrus_entries(
+        self,
+        *,
+        events: Collection[PapyrusEvent] = (),
+        since: datetime | None = None,
+        summons: str | None = None,
+        assertion: str | None = None,
+        limit: int = 200,
+    ) -> list[PapyrusEntry]:
+        """Read Papyrus (the audit log) through the same filters the API offers.
+
+        Oldest first, newest kept when the limit cuts. This reads the log and
+        nothing else: Papyrus has no way to change or remove an entry.
+        """
+        return select_entries(
+            self._papyrus.entries(),
+            events=events,
+            since=since,
+            summons=summons,
+            assertion=assertion,
+            limit=limit,
+        )
 
     # Halt and resume. Neither touches the model.
 

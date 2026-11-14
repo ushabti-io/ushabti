@@ -187,6 +187,8 @@ One ushabti, on port 8080 by default:
 | `GET /metrics` | Prometheus metrics: vigil ticks, isfet count, omen count, verdicts by type, actions run. |
 | `POST /summons` | Accepts a summons and returns `202` with its id. Needs the token. |
 | `GET /summons/{id}` | Returns the summons in its current state. Needs the token. |
+| `GET /summons` | Lists the summonses this ushabti remembers, newest first. `limit` defaults to 200. Needs the token. |
+| `GET /papyrus` | Reads Papyrus as NDJSON, one entry per line, oldest first. Filters: `event` (repeatable), `since`, `summons`, `assertion`, `limit` (default 200, at most 5000, the newest kept). Needs the token. |
 | `POST /halt`, `POST /resume` | Halt and resume. Need the token. |
 
 The overseer, on port 8081 by default:

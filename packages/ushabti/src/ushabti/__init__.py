@@ -42,7 +42,7 @@ from ushabti.models import (
     build_provider,
 )
 from ushabti.omen import Omen
-from ushabti.papyrus import JsonlPapyrus, Papyrus, PapyrusEntry, PapyrusEvent
+from ushabti.papyrus import JsonlPapyrus, Papyrus, PapyrusEntry, PapyrusEvent, select_entries
 from ushabti.spell import (
     ModelProviderName,
     ModelSpec,
@@ -132,4 +132,5 @@ __all__ = [
     "load_spell",
     "parse_spell",
     "resolve_spell",
+    "select_entries",
 ]

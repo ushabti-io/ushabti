@@ -2,11 +2,12 @@
 
 import os
 import threading
-from collections.abc import Iterator
-from datetime import datetime
+from collections import deque
+from collections.abc import Collection, Iterable, Iterator
+from datetime import UTC, datetime
 from enum import StrEnum
 from pathlib import Path
-from typing import Protocol
+from typing import Final, Protocol
 
 import pydantic
 import structlog
@@ -16,6 +17,9 @@ from ushabti._base import WireModel
 from ushabti.weighing import Verdict
 
 _log = structlog.get_logger(__name__)
+
+SELECTION_LIMIT: Final = 200
+"""How many entries ``select_entries`` keeps when no limit is given."""
 
 
 class PapyrusEvent(StrEnum):
@@ -59,6 +63,49 @@ class Papyrus(Protocol):
     def append(self, entry: PapyrusEntry) -> None: ...
 
     def entries(self) -> Iterator[PapyrusEntry]: ...
+
+
+def select_entries(
+    entries: Iterable[PapyrusEntry],
+    *,
+    events: Collection[PapyrusEvent] = (),
+    since: datetime | None = None,
+    summons: str | None = None,
+    assertion: str | None = None,
+    limit: int = SELECTION_LIMIT,
+) -> list[PapyrusEntry]:
+    """The entries that match every given filter, oldest first.
+
+    ``events`` keeps only those kinds; ``since`` drops entries before a moment
+    (a naive moment is taken as UTC); ``summons`` keeps the summons itself and
+    every proposal, verdict, and action made for it; ``assertion`` keeps the
+    observations and outcomes of one assertion. When more than ``limit``
+    entries match, the newest are kept. This only reads: it is how the API
+    looks at the log.
+    """
+    if limit < 1:
+        raise ValueError("limit must be at least 1")
+    if since is not None and since.tzinfo is None:
+        since = since.replace(tzinfo=UTC)
+    kept: deque[PapyrusEntry] = deque(maxlen=limit)
+    for entry in entries:
+        if events and entry.event not in events:
+            continue
+        if since is not None and entry.timestamp < since:
+            continue
+        if summons is not None and _summons_of(entry) != summons:
+            continue
+        if assertion is not None and entry.payload.get("assertion") != assertion:
+            continue
+        kept.append(entry)
+    return list(kept)
+
+
+def _summons_of(entry: PapyrusEntry) -> JsonValue:
+    """The summons an entry belongs to: its own id for a summons event, else the payload's."""
+    if entry.event is PapyrusEvent.SUMMONS:
+        return entry.payload.get("id")
+    return entry.payload.get("summons")
 
 
 class JsonlPapyrus:

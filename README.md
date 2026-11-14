@@ -86,10 +86,18 @@ has `dry_run: true`, so the verdict is `DRY_RUN`: recorded, not run. Read it in
 Papyrus (the append-only audit log):
 
 ```bash
-docker compose -f deploy/compose/solo.yaml exec agent cat /var/lib/ushabti/papyrus.jsonl
+curl -H "Authorization: Bearer $USHABTI_ADMIN_TOKEN" \
+  "http://127.0.0.1:8080/papyrus?event=verdict"
 ```
 
-Look for the line with `"event":"verdict"` and `"verdict":"DRY_RUN"`.
+The answer is one JSON line per entry, and the one you want says
+`"verdict":"DRY_RUN"`. Drop the `event` filter to read everything the ushabti
+recorded, including what the model said at each step, or add `summons=<id>` to
+follow one summons. The file itself is on the container's volume:
+
+```bash
+docker compose -f deploy/compose/solo.yaml exec agent cat /var/lib/ushabti/papyrus.jsonl
+```
 
 Halt stops an ushabti from acting at once. It keeps observing.
 

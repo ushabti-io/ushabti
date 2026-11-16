@@ -14,7 +14,7 @@
 FROM ghcr.io/astral-sh/uv:0.13.7 AS uv
 
 # Build stage: resolve and install into a virtual environment with uv.
-FROM python:3.14-slim AS build
+FROM python:3.15-slim AS build
 
 COPY --from=uv /uv /bin/uv
 
@@ -43,7 +43,7 @@ RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --locked --no-dev --no-editable --package ushabti-overseer
 
 # Runtime stage: the slim image, the virtual environment, and a non-root user.
-FROM python:3.14-slim AS runtime
+FROM python:3.15-slim AS runtime
 
 ARG IMAGE=ghcr.io/ushabti-io/ushabti-overseer
 
